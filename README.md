@@ -4,12 +4,10 @@ A simple workout app for the family, with profiles for **Papa**, **Mummy** and *
 Each profile shows today's session, how to do each exercise (photos, steps, common mistakes) and a set logger with weight and reps.
 It also has a rest timer, progress history and CSV export. It works offline and installs on the phone like an app (PWA).
 
-**Profiles & sharing (v0.3.0):** tap your avatar on your profile (or Settings → Profile photo) to add a photo. It is cropped to a 256 px JPEG and synced to every phone. Share buttons send the app invite (Home and Settings), a finished workout (Today), your streak (Progress) and the standings (Board) to WhatsApp or anywhere else.
+**Profiles & sharing (v0.3.0):** tap your avatar on your profile (or Settings → Profile photo) to add a photo. It is cropped to a 256 px JPEG and synced to every phone. Share buttons send the app invite (Settings), a finished workout (Today), your streak (Progress) and the standings (Board) to WhatsApp or anywhere else.
 
 **Compete:** each Progress page has a LeetCode-style calendar of workout days with current and best streaks, and the 🏆 **Board** ranks the family by week, month or all time.
 Week and month use *consistency* (planned workout days done), so 5-day and 6-day plans compete fairly; rest days never break a streak.
-
-**Live:** https://himanshusurya.github.io/family-gym/
 
 ## Android app
 
@@ -47,7 +45,7 @@ Check locally with `node tools/validate.mjs`.
 
 Supabase stores **only** the logged sets in `set_log` (profile, day, exercise, set, kg, reps), plus one small profile photo per person in `avatar`.
 Plans and media are served from GitHub Pages. Every set is saved on the phone first and synced when online.
-Several phones can share data: everyone signs in once with the 8-digit **family code**.
+Several phones can share data: everyone signs in once with the **family code**.
 
 To set it up (one time): `.\supabase\setup.ps1 -AccessToken sbp_… -FamilyEmail <email>`. Then commit `config.js` and add the repo secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the keep-alive action.
 Without `config.js` settings the app runs in **demo mode** and stores logs on the phone only. (Cloud sync is live since 2026-11-22.)

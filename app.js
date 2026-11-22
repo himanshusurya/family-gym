@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.4.1';
+const APP_VERSION = '0.4.2';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -97,9 +97,10 @@ async function share(text, title = 'Family Gym') {
 const inviteText = () => `Join our Family Gym 💪\n\nAndroid app: ${APK_URL}\nOr open in the browser: ${SITE_URL}\n\nFamily code: ask Himanshu.`;
 
 /* ---------------- profile photos (synced via the small "avatar" table) ---------------- */
+const AVATAR_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 const Avatars = {
   map: LS.get('avatars', {}),
-  get(pid) { return this.map[pid]?.img || ''; },
+  get(pid) { const img = this.map[pid]?.img || ''; return AVATAR_RE.test(img) ? img : ''; },
   set(pid, img) { this.map[pid] = { img, updated_at: new Date().toISOString(), synced: false }; this.save(); Sync.soon(); },
   save() { LS.set('avatars', this.map); },
 };
@@ -390,14 +391,15 @@ function toast(msg) {
 }
 function nav(pid, active) {
   const tabs = [['today', 'Today', 'dumbbell'], ['history', 'Progress', 'chart'], ['board', 'Board', 'trophy'], ['plan', 'Plan', 'clipboard'], ['settings', 'Settings', 'sliders']];
+  if (pid && !profile(pid)) pid = null;
   $('#nav').innerHTML = pid ? tabs.map(([k, l, i]) =>
-    `<a href="#/p/${pid}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${I(i)}</span>${l}</a>`).join('') : '';
+    `<a href="#/p/${esc(encodeURIComponent(pid))}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${I(i)}</span>${l}</a>`).join('') : '';
   $('#nav').hidden = !pid;
   paintUpdDot();
 }
 const avatar = (p, size = '') => {
   const img = Avatars.get(p.id);
-  return `<span class="av ${size}" style="--c:${esc(p.color)}">${img ? `<img src="${img}" alt="">` : esc(p.name[0])}</span>`;
+  return `<span class="av ${size}" style="--c:${esc(p.color)}">${img ? `<img src="${esc(img)}" alt="">` : esc(p.name[0])}</span>`;
 };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 
@@ -806,6 +808,7 @@ function route() {
   window.scrollTo(0, 0);
   if (h[0] === 'p' && h[1]) {
     const pid = h[1];
+    if (!profile(pid)) { history.replaceState(history.state, '', HOME); return viewHome(); }
     if (!h[2]) return viewProfile(pid);
     if (h[2] === 'd') return viewProfile(pid, h[3]);
     if (h[2] === 's') return viewExercise(pid, h[3], +h[4] || 0);
@@ -814,7 +817,7 @@ function route() {
     if (h[2] === 'board') return viewBoard(pid);
     if (h[2] === 'settings') return viewSettings(pid);
   }
-  if (h[0] === 'settings') return viewSettings(LS.get('profile', null));
+  if (h[0] === 'settings') return viewSettings(profile(LS.get('profile', null)) ? LS.get('profile', null) : null);
   if (h[0] === 'board') return viewBoard(null);
   return viewHome();
 }

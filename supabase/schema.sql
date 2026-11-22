@@ -38,6 +38,10 @@ create table if not exists public.avatar (
   updated_at timestamptz not null default now(),
   srv_at     timestamptz not null default clock_timestamp()
 );
+-- Only image data URLs may be stored; the app renders this value into an <img src>.
+alter table public.avatar drop constraint if exists avatar_img_is_image;
+alter table public.avatar add constraint avatar_img_is_image
+  check (img = '' or img ~ '^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$');
 drop trigger if exists avatar_touch on public.avatar;
 create trigger avatar_touch before insert or update on public.avatar for each row execute function public.set_log_touch();
 alter table public.avatar enable row level security;
