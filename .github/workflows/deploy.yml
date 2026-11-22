@@ -11,11 +11,8 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.dep.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,5 +25,14 @@ jobs:
           cp -r index.html app.js styles.css sw.js config.js manifest.webmanifest version.json icons plans exercises media _site/
       - uses: actions/upload-pages-artifact@v3
         with: { path: _site }
+  # Separate job: deploy-pages in the same job as the upload can intermittently miss the
+  # artifact (actions/deploy-pages#451).
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.dep.outputs.page_url }}
+    steps:
       - id: dep
         uses: actions/deploy-pages@v4
