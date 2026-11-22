@@ -89,9 +89,19 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setBackgroundColor(BG);
     }
 
+    private long lastBack;
+
+    /** Lets the page close a dialog first; on Home (or with no history) exit needs a second press within 2 s. */
     private void goBackOrExit() {
-        if (web.canGoBack()) web.goBack();
-        else finish();
+        web.evaluateJavascript("window.fgBack ? fgBack() : ''", r -> {
+            String v = r == null ? "" : r.replace("\"", "");
+            if (v.equals("handled")) return;
+            if (!v.equals("home") && web.canGoBack()) { web.goBack(); return; }
+            long now = System.currentTimeMillis();
+            if (now - lastBack < 2000) { finish(); return; }
+            lastBack = now;
+            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+        });
     }
 
     @SuppressWarnings("deprecation")

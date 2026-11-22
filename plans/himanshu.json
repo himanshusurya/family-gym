@@ -1,7 +1,7 @@
 {
   "id": "himanshu",
-  "title": "Himanshu: spine-safe Upper/Lower v3 (5 days)",
-  "version": "3.2",
+  "title": "Himanshu: spine-safe Upper/Lower v4 (6 days)",
+  "version": "4.0",
   "updated": "2026-11-22",
   "weekly": {
     "mon": "UA",
@@ -9,7 +9,7 @@
     "wed": "UB",
     "thu": "LB",
     "fri": "D5",
-    "sat": null,
+    "sat": "D6",
     "sun": null
   },
   "warmup": {
@@ -32,7 +32,8 @@
     "Never round the lower back under load. Brace lightly every set.",
     "Avoid: barbell back squat, floor deadlift, standing barbell OHP, bent-over barbell row, good mornings, weighted sit-ups/twists.",
     "No heavy training in the first hour after waking.",
-    "Stop on any pain, numbness or tingling into the buttock or leg."
+    "Stop on any pain, numbness or tingling into the buttock or leg.",
+    "Saturday (Day 6) is a lighter pump day: leave 2–3 reps in reserve. Skip it if you slept under 6 h or your back feels tight. Sunday is full rest."
   ],
   "progression": [
     "Double progression: add reps each week; when all sets hit the top of the range, add the smallest load.",
@@ -396,6 +397,74 @@
           "sets": 3,
           "reps": "12-15",
           "rest": 75
+        }
+      ]
+    },
+    "D6": {
+      "title": "Day 6: Chest + Lats + Core (light)",
+      "items": [
+        {
+          "ex": "machine-chest-press",
+          "sets": 3,
+          "reps": "10-12",
+          "note": "2–3 reps in reserve",
+          "rest": 120
+        },
+        {
+          "ex": "cable-fly",
+          "sets": 3,
+          "reps": "12-15",
+          "note": "Low-to-high for the upper chest",
+          "alt": [
+            "pec-deck"
+          ],
+          "rest": 75
+        },
+        {
+          "ex": "lat-pulldown",
+          "sets": 3,
+          "reps": "10-12",
+          "note": "Wide grip for V-taper width",
+          "rest": 120
+        },
+        {
+          "ex": "seated-cable-row",
+          "sets": 3,
+          "reps": "12",
+          "note": "Chest tall, no lower-back swing",
+          "alt": [
+            "chest-supported-row"
+          ],
+          "rest": 90
+        },
+        {
+          "ex": "calf-seated",
+          "sets": 3,
+          "reps": "15-20",
+          "rest": 60
+        },
+        {
+          "ex": "pallof-press",
+          "sets": 3,
+          "reps": "10",
+          "unit": "reps/side",
+          "rest": 45
+        },
+        {
+          "ex": "dead-bug",
+          "sets": 3,
+          "reps": "8",
+          "unit": "reps/side",
+          "load": "bw",
+          "rest": 30
+        },
+        {
+          "ex": "bird-dog",
+          "sets": 2,
+          "reps": "8",
+          "unit": "reps/side",
+          "load": "bw",
+          "rest": 30
         }
       ]
     }

@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.4.2';
+const APP_VERSION = '0.5.0';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -55,7 +55,7 @@ const I = (n, c = '') => `<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="
 /* ---------------- Android shell, sharing ---------------- */
 const SITE_URL = 'https://himanshusurya.github.io/family-gym/';
 const APK_URL = 'https://github.com/himanshusurya/family-gym/releases/latest/download/family-gym.apk';
-let LATEST_APK = '1.1.0';
+let LATEST_APK = '1.2.0';
 const SHELL = (navigator.userAgent.match(/FamilyGymAndroid\/([\d.]+)/) || [])[1] || null;
 const verLt = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); return false; };
 const shellOld = () => !!SHELL && verLt(SHELL, LATEST_APK);
@@ -94,7 +94,7 @@ async function share(text, title = 'Family Gym') {
   if (navigator.share) { try { await navigator.share({ title, text }); } catch { /* cancelled */ } return; }
   try { await navigator.clipboard.writeText(text); toast('Copied. Paste it in WhatsApp'); } catch { prompt('Copy this message:', text); }
 }
-const inviteText = () => `Join our Family Gym 💪\n\nAndroid app: ${APK_URL}\nOr open in the browser: ${SITE_URL}\n\nFamily code: ask Himanshu.`;
+const inviteText = () => `Join our Family Gym 💪\n\nAndroid app: ${APK_URL}\nOr open in the browser: ${SITE_URL}\n\nAsk Himanshu for your PIN.`;
 
 /* ---------------- profile photos (synced via the small "avatar" table) ---------------- */
 const AVATAR_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
@@ -155,6 +155,8 @@ async function loadData() {
   S.loadedAt = Date.now();
 }
 const profile = (id) => S.index?.profiles.find((p) => p.id === id);
+// The person using this phone: their signed-in account (cloud) or the profile picked in demo mode.
+const ME = () => { const id = CLOUD ? LS.get('auth', null)?.profile : LS.get('profile', null); return id && profile(id) ? id : null; };
 const exInfo = (id) => S.ex.get(id) || { id, name: id, muscles: '', img: [], steps: [], mistakes: [] };
 
 /* ---------------- logs (local first) ---------------- */
@@ -195,9 +197,13 @@ function suggestion(item, last) {
 const Sync = {
   busy: false, err: '', timer: 0,
   soon() { clearTimeout(this.timer); this.timer = setTimeout(() => this.run(), 1500); },
-  authed() { return !!LS.get('auth', null); },
-  pending() { return LOGS.filter((l) => !l.synced).length; },
-  saveAuth(j) { LS.set('auth', { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + j.expires_in * 1000 }); },
+  authed() { return !!LS.get('auth', null)?.profile; },
+  pending() { return LOGS.filter((l) => !l.synced && l.profile === ME()).length; },
+  saveAuth(j) {
+    const prev = LS.get('auth', null);
+    LS.set('auth', { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + j.expires_in * 1000,
+      profile: j.user?.app_metadata?.profile || prev?.profile || null });
+  },
   async authCall(grant, body) {
     const r = await fetch(`${CFG.supabaseUrl}/auth/v1/token?grant_type=${grant}`, {
       method: 'POST', headers: { apikey: CFG.anonKey, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -206,7 +212,18 @@ const Sync = {
     if (!r.ok) { const e = new Error(j.error_description || j.msg || j.message || `HTTP ${r.status}`); e.status = r.status; throw e; }
     this.saveAuth(j);
   },
-  login(code) { return this.authCall('password', { email: CFG.familyEmail, password: code.trim() }); },
+  // Each person has their own account (<id>@<userDomain>) whose app_metadata.profile ties it to one profile.
+  async login(pid, pin) {
+    await this.authCall('password', { email: `${pid}@${CFG.userDomain}`, password: pin });
+    if (LS.get('auth', null)?.profile !== pid) { this.logout(); const e = new Error('Account not linked to this person'); e.status = 400; throw e; }
+  },
+  async changePin(pin) {
+    const t = await this.token();
+    const r = await fetch(`${CFG.supabaseUrl}/auth/v1/user`, {
+      method: 'PUT', headers: { apikey: CFG.anonKey, Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pin }),
+    });
+    if (!r.ok) { const e = new Error(`HTTP ${r.status}`); e.status = r.status; throw e; }
+  },
   logout() { LS.del('auth'); },
   async token() {
     const a = LS.get('auth', null);
@@ -230,7 +247,7 @@ const Sync = {
     this.busy = true; paintSync();
     try {
       // push
-      const out = LOGS.filter((l) => !l.synced);
+      const out = LOGS.filter((l) => !l.synced && l.profile === ME()); // the server only accepts your own sets
       for (let i = 0; i < out.length; i += 200) {
         const batch = out.slice(i, i + 200);
         const body = batch.map(({ synced, srv_at, ...r }) => r);
@@ -266,7 +283,7 @@ const Sync = {
   async syncAvatars() {
     let changed = false;
     try {
-      const out = Object.entries(Avatars.map).filter(([, a]) => !a.synced);
+      const out = Object.entries(Avatars.map).filter(([pid, a]) => !a.synced && pid === ME());
       if (out.length) {
         await this.api('avatar?on_conflict=profile', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
           body: JSON.stringify(out.map(([profile, a]) => ({ profile, img: a.img, updated_at: a.updated_at }))) });
@@ -345,17 +362,20 @@ const setTitle = (t, back) => {
 };
 
 /* ---------------- navigation: back always goes UP one screen ----------------
-   The history stack mirrors the screen hierarchy: home(0) → profile/day(1) → tab or exercise(2)
-   → exercise progress(3). Going deeper pushes one entry, moving sideways (days, tabs, Next/Prev)
-   replaces the top entry, and going up jumps back to the entry at that level. Entries are only
-   added from taps, because Chrome/WebView back skips entries pushed without a user gesture. */
+   The history stack mirrors the screen hierarchy: home = your Today(0) → another day, Progress,
+   Board, Plan, Settings(1) → exercise or a progress detail(2) → (3). Going deeper pushes one entry,
+   moving sideways (days, tabs, Next/Prev) replaces the top entry, and going up jumps back to the
+   entry at that level. Entries are only added from taps, because Chrome/WebView back skips entries
+   pushed without a user gesture. Exiting from Home needs two back presses (Android app). */
 const HOME = '#/';
 const norm = (h) => (!h || h === '#' || h === '#/' ? HOME : h);
 const depth = (h) => {
   const p = norm(h).replace(/^#\/?/, '').split('/').filter(Boolean);
   if (!p.length) return 0;
-  if (p[0] !== 'p' || !p[2] || p[2] === 'd') return 1;
-  return p[2] === 'history' && p[3] ? 3 : 2;
+  if (p[0] !== 'p') return 1;
+  if (!p[2] || (p[2] === 'd' && (!p[3] || p[3] === todayKey()))) return 0;
+  if (p[2] === 'history') return 1 + (p[3] ? 1 : 0);
+  return p[2] === 's' ? 2 : 1;
 };
 let UP = null, cur = null, pending = null;
 let stackD = [0]; // depth of each history entry we own, indexed by history.state.i
@@ -368,6 +388,7 @@ function go(h) {
   else if (dt === dc || i === 0) { history.replaceState({ i }, '', h); stackD[i] = dt; }
   else {
     let j = i; while (j > 0 && stackD[j] > dt) j--;
+    if (j === 0 && dt > 0) j = 1; // never overwrite Home: reuse the entry just above it
     if (j < i) { pending = h; history.go(j - i); return; }
     history.replaceState({ i }, '', h); stackD[i] = dt;
   }
@@ -385,16 +406,33 @@ window.addEventListener('popstate', () => {
   route();
 });
 window.addEventListener('hashchange', () => { if (norm(location.hash) !== cur) route(); });
+// Asked by the Android app (1.2.0+) before it handles the back button.
+window.fgBack = () => { if (ask.close) { ask.close(); return 'handled'; } return depth(location.hash) === 0 ? 'home' : ''; };
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2500);
 }
+// Themed replacement for confirm(). `html` must already be escaped. Android back / Esc / tap outside = Cancel.
+function ask(html, okLabel = 'OK', danger = true) {
+  return new Promise((resolve) => {
+    const m = document.createElement('div'); m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+    m.innerHTML = `<div class="sheet"><p>${html}</p><div class="sheet-b"><button class="ghost" data-a="0">Cancel</button>
+      <button class="${danger ? 'danger' : 'primary'}" data-a="1">${esc(okLabel)}</button></div></div>`;
+    const done = (v) => { ask.close = null; m.remove(); document.removeEventListener('keydown', key); window.removeEventListener('popstate', done0); resolve(v); };
+    const key = (e) => { if (e.key === 'Escape') done(false); };
+    const done0 = () => done(false);
+    ask.close?.(); ask.close = done0;
+    m.onclick = (e) => { if (e.target === m) done(false); const a = e.target.closest('[data-a]'); if (a) done(a.dataset.a === '1'); };
+    document.addEventListener('keydown', key); window.addEventListener('popstate', done0);
+    document.body.appendChild(m); m.querySelector('[data-a="1"]').focus();
+  });
+}
 function nav(pid, active) {
+  const me = ME();
   const tabs = [['today', 'Today', 'dumbbell'], ['history', 'Progress', 'chart'], ['board', 'Board', 'trophy'], ['plan', 'Plan', 'clipboard'], ['settings', 'Settings', 'sliders']];
-  if (pid && !profile(pid)) pid = null;
-  $('#nav').innerHTML = pid ? tabs.map(([k, l, i]) =>
-    `<a href="#/p/${esc(encodeURIComponent(pid))}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${I(i)}</span>${l}</a>`).join('') : '';
-  $('#nav').hidden = !pid;
+  $('#nav').innerHTML = me ? tabs.map(([k, l, i]) =>
+    `<a href="${k === 'today' ? HOME : `#/p/${esc(encodeURIComponent(me))}/${k}`}" class="${k === active ? 'on' : ''}"><span>${I(i)}</span>${l}</a>`).join('') : '';
+  $('#nav').hidden = !me || !pid;
   paintUpdDot();
 }
 const avatar = (p, size = '') => {
@@ -403,27 +441,43 @@ const avatar = (p, size = '') => {
 };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 
-function viewHome() {
+// One-time sign-in per phone: pick who you are, then your own PIN (cloud) or nothing (demo mode).
+function viewLogin() {
   setTitle('Family Gym'); nav(null);
   const ps = S.index.profiles;
+  let sel = profile(LS.get('profile', null)) ? LS.get('profile', null) : null;
   app().innerHTML = `
     <section class="hello"><small>${greeting()} · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</small>
-      <h2>Who's training today?</h2></section>
-    <div class="profiles">${ps.map((p) => {
-      const plan = S.plans[p.id]; const sk = plan?.weekly?.[todayKey()];
-      const sess = sk ? plan.sessions[sk] : null; const st = plan ? stats(p.id) : null;
-      return `<a class="pcard" href="#/p/${p.id}" style="--c:${esc(p.color)}">${avatar(p, 'big')}
-        <div class="pinfo"><b>${esc(p.name)}</b><small>${plan ? (sess ? esc(sess.title) : 'Rest day') : 'Plan not loaded'}</small></div>
-        ${st ? `<span class="pill ${st.cur ? 'hot' : ''}">${I('flame')}${st.cur}</span>` : ''}${I('chev', 'go')}</a>`;
-    }).join('')}</div>
-    <a class="card boardteaser" href="#/board"><div class="card-h">${I('trophy')}<h3>Leaderboard</h3><small>This week</small>${I('chev', 'go')}</div>
-      ${ranking('week').map((r) => `<div class="tline">${rankBadge(r.rank)}${avatar(r.p)}<b>${esc(r.p.name)}</b><span>${r.st.week.pct}%<em>${I('flame')}${r.st.cur}</em></span></div>`).join('')}</a>`;
+      <h2>Who are you?</h2><p class="muted">${CLOUD ? 'Sign in once on this phone with your own PIN.' : 'Demo mode: logs stay on this phone.'}</p></section>
+    <div class="profiles">${ps.map((p) => `<button class="pcard pick" data-pid="${esc(p.id)}" style="--c:${esc(p.color)}">${avatar(p, 'big')}
+      <div class="pinfo"><b>${esc(p.name)}</b></div>${I('chev', 'go')}</button>`).join('')}</div>
+    ${CLOUD ? `<div class="card pinbox" id="pinbox" hidden><h3>${I('shield')} PIN for <span id="pinname"></span></h3>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Your PIN" maxlength="12">
+      <button class="primary wide" id="login">Sign in</button><small class="muted">Don't have a PIN? Ask Himanshu.</small></div>` : ''}`;
+  const pick = (pid) => {
+    sel = pid; LS.set('profile', pid);
+    if (!CLOUD) return enterHome();
+    app().querySelectorAll('.pick').forEach((b) => b.classList.toggle('sel', b.dataset.pid === pid));
+    $('#pinname').textContent = profile(pid).name; $('#pinbox').hidden = false; $('#pin').value = ''; $('#pin').focus();
+  };
+  app().querySelectorAll('.pick').forEach((b) => { b.onclick = () => pick(b.dataset.pid); });
+  if (!CLOUD) return;
+  const login = async () => {
+    const pin = $('#pin').value.trim(); const b = $('#login');
+    if (!/^\d{4,12}$/.test(pin)) { toast('Enter your PIN'); return; }
+    b.disabled = true; b.textContent = 'Signing in…';
+    try { await Sync.login(sel, pin); toast(`Welcome, ${profile(sel).name} ✓`); enterHome(); Sync.run(); }
+    catch (e) { toast(e.status === 400 ? 'Wrong PIN' : e.status === 429 ? 'Too many tries. Wait a few minutes.' : 'No internet? Try again'); b.disabled = false; b.textContent = 'Sign in'; }
+  };
+  $('#login').onclick = login;
+  $('#pin').onkeydown = (e) => { if (e.key === 'Enter') login(); };
+  if (sel) pick(sel);
 }
 
 function weekStrip(pid, plan, selected) {
   return `<div class="week">${WEEK.map((d) => {
     const sk = plan.weekly[d]; const s = sk && plan.sessions[sk];
-    return `<a class="wd ${d === todayKey() ? 'today' : ''} ${d === selected ? 'sel' : ''} ${s ? '' : 'rest'}" href="#/p/${pid}/d/${d}">
+    return `<a class="wd ${d === todayKey() ? 'today' : ''} ${d === selected ? 'sel' : ''} ${s ? '' : 'rest'}" href="${d === todayKey() ? HOME : `#/p/${pid}/d/${d}`}">
       <b>${DAY_NAME[d]}</b><small>${s ? esc(s.title.split(/[:(]/)[0].trim()) : 'Rest'}</small></a>`;
   }).join('')}</div>`;
 }
@@ -431,16 +485,16 @@ function weekStrip(pid, plan, selected) {
 function viewProfile(pid, day) {
   const p = profile(pid); const plan = S.plans[pid];
   if (!p || !plan) return notFound();
-  LS.set('profile', pid);
-  setTitle(p.name, '#/'); nav(pid, 'today');
   const d = day || todayKey();
+  if (d === todayKey()) setTitle(`${greeting()}, ${p.name}`); else setTitle(`${p.name} · ${DAY_NAME[d]}`, HOME);
+  nav(pid, 'today');
   const sk = plan.weekly[d];
   const st = stats(pid);
   app().innerHTML = `
     <div class="hero" style="--c:${esc(p.color)}">
       <button class="av-edit" id="photo" aria-label="Change profile photo">${avatar(p, 'xl')}<span class="cam">${I('camera')}</span></button>
       <div class="hero-t"><h2>${esc(p.name)}</h2><small>${esc(plan.title.replace(/^[^:]*:\s*/, ''))} · v${esc(plan.version)}</small>
-        <a class="hstats" href="#/p/${pid}/board"><span><b>${st.cur}</b>streak</span><span><b>${st.week.n}/${st.week.due || st.week.n}</b>this week</span><span><b>${st.total}</b>total days</span></a></div>
+        <a class="hstats" href="#/p/${pid}/board"><span><b>${st.cur}</b>streak</span><span><b>${st.week.n}/${WEEK.filter((w) => plan.weekly[w]).length}</b>this week</span><span><b>${st.total}</b>total days</span></a></div>
     </div>
     ${weekStrip(pid, plan, d)}` + (sk ? sessionBody(pid, plan, sk, d) : `
     <div class="card center rest-card"><div class="rest-ic">${I('moon')}</div><h2>Rest day</h2>
@@ -495,18 +549,21 @@ function viewExercise(pid, sk, idx) {
   const last = lastTime(pid, exId);
   const today = setsToday(pid, sk, exId);
   const bw = it.load === 'bw';
-  setTitle(`${p.name} · ${idx + 1}/${s.items.length}`, `#/p/${pid}/d/${dayOf(plan, sk)}`); nav(pid, 'today');
+  const sd = dayOf(plan, sk);
+  setTitle(`${p.name} · ${idx + 1}/${s.items.length}`, sd === todayKey() ? HOME : `#/p/${pid}/d/${sd}`); nav(pid, 'today');
   const rows = [];
+  const defReps = topOf(it.reps) || 12; // prefilled so Done works without typing; editable
   const n = Math.max(it.sets, today.length ? today[today.length - 1].set_no : 0);
   for (let k = 1; k <= n; k++) {
     const got = today.find((x) => x.set_no === k);
     const prev = last?.sets.find((x) => x.set_no === k) || last?.sets[last.sets.length - 1];
     const prevToday = today.filter((x) => x.set_no < k).pop();
     const kg = got ? got.kg : (prevToday?.kg ?? prev?.kg ?? '');
+    const reps = got ? got.reps : (prevToday?.reps ?? defReps);
     rows.push(`<div class="set ${got ? 'done' : ''}" data-k="${k}" data-cid="${got ? got.cid : ''}">
       <span class="n">${k}</span>
       ${bw ? '<span class="bw">body</span>' : `<input class="kg" type="number" inputmode="decimal" step="0.5" min="0" value="${esc(kg ?? '')}" placeholder="kg" aria-label="kg">`}
-      <input class="reps" type="number" inputmode="numeric" min="0" value="${got ? esc(got.reps) : ''}" placeholder="${esc(topOf(it.reps))}" aria-label="${esc(unitLabel(it))}">
+      <input class="reps" type="number" inputmode="numeric" min="0" value="${esc(reps)}" placeholder="${esc(defReps)}" aria-label="${esc(unitLabel(it))}">
       <button class="tick" aria-label="Save set ${k}">${got ? '✓' : 'Done'}</button>
       ${got ? `<button class="del" aria-label="Delete set ${k}">✕</button>` : ''}
     </div>`);
@@ -529,7 +586,7 @@ function viewExercise(pid, sk, idx) {
     <div class="pager">
       ${prevI !== null ? `<a class="btn ghost" href="#/p/${pid}/s/${sk}/${prevI}">← Prev</a>` : '<span></span>'}
       ${nextI !== null ? `<a class="btn ${today.length >= it.sets ? 'primary' : 'ghost'}" href="#/p/${pid}/s/${sk}/${nextI}">Next →</a>`
-        : `<a class="btn ${today.length >= it.sets ? 'primary' : 'ghost'}" href="#/p/${pid}">Finish ✓</a>`}
+        : `<a class="btn ${today.length >= it.sets ? 'primary' : 'ghost'}" href="${sd === todayKey() ? HOME : `#/p/${pid}/d/${sd}`}">Finish ✓</a>`}
     </div>`;
 
   app().querySelectorAll('[data-swap]').forEach((b) => b.onclick = () => { LS.set(swapKey(pid, sk, idx), b.dataset.swap); route(); });
@@ -537,13 +594,16 @@ function viewExercise(pid, sk, idx) {
     const box = app().querySelector('.sets'); const k = box.querySelectorAll('.set:not(.head)').length + 1;
     const tmp = document.createElement('div'); tmp.innerHTML = rows[rows.length - 1] || '';
     const row = tmp.firstElementChild; row.dataset.k = k; row.dataset.cid = ''; row.classList.remove('done');
-    row.querySelector('.n').textContent = k; row.querySelector('.reps').value = '';
+    row.querySelector('.n').textContent = k;
+    const lastReps = [...box.querySelectorAll('.set.done .reps')].pop()?.value;
+    row.querySelector('.reps').value = lastReps || defReps;
     row.querySelector('.tick').textContent = 'Done'; row.querySelector('.del')?.remove();
     box.appendChild(row); wireRow(row);
   };
   const wireRow = (row) => {
     row.querySelector('.tick').onclick = () => {
-      const reps = +row.querySelector('.reps').value;
+      const repsEl = row.querySelector('.reps');
+      const reps = +(repsEl.value === '' ? repsEl.placeholder : repsEl.value);
       const kgEl = row.querySelector('.kg'); const kg = kgEl && kgEl.value !== '' ? +kgEl.value : null;
       if (!reps || reps < 0) { toast('Enter how many you did'); row.querySelector('.reps').focus(); return; }
       if (kg != null && (kg < 0 || kg > 500)) { toast('Check the weight'); return; }
@@ -558,8 +618,9 @@ function viewExercise(pid, sk, idx) {
       route();
     };
     const del = row.querySelector('.del');
-    if (del) del.onclick = () => {
-      if (!confirm(`Delete set ${row.dataset.k}?`)) return;
+    if (del) del.onclick = async () => {
+      const r = row.querySelector('.reps').value; const w = row.querySelector('.kg')?.value;
+      if (!(await ask(`Delete set ${row.dataset.k}?<br><small>${esc(e.name)}${w ? ` · ${esc(w)} kg` : ''} × ${esc(r)}</small>`, 'Delete'))) return;
       const l = LOGS.find((x) => x.cid === row.dataset.cid);
       if (l) putLog({ ...l, deleted: true });
       route();
@@ -580,10 +641,27 @@ function bestPerDay(logs) {
   for (const l of logs) { const b = by[l.day]; if (!b || (+l.kg || 0) > (+b.kg || 0) || ((+l.kg || 0) === (+b.kg || 0) && l.reps > b.reps)) by[l.day] = l; }
   return Object.keys(by).sort().map((d) => by[d]);
 }
+// Shared on the leaderboard: biggest gains (first → latest best set) and this month's volume.
+function progressSummary(pid) {
+  const mine = LOGS.filter((l) => live(l) && l.profile === pid);
+  const month = dayStr().slice(0, 7);
+  const sets = mine.filter((l) => l.day.startsWith(month)).length;
+  const fmt = (x) => (+x.kg ? `${+x.kg} kg` : `${x.reps} reps`);
+  const val = (x) => (+x.kg || 0) || x.reps;
+  const gains = [...new Set(mine.map((l) => l.ex))].map((ex) => {
+    const b = bestPerDay(mine.filter((l) => l.ex === ex)); if (b.length < 2) return null;
+    const f = b[0], t = b[b.length - 1]; if (!!+f.kg !== !!+t.kg) return null;
+    return { ex, f, t, pct: Math.round((val(t) - val(f)) * 100 / (val(f) || 1)), vals: b.map(val) };
+  }).filter((g) => g && g.pct > 0).sort((a, b) => b.pct - a.pct).slice(0, 3);
+  return `<div class="prog"><span><b>${sets}</b> sets this month</span><span><b>${new Set(mine.map((l) => l.ex)).size}</b> exercises</span></div>
+    ${gains.length ? `<div class="gains">${gains.map((g) => `<div class="gain"><div><b>${esc(exInfo(g.ex).name)}</b>
+      <small>${fmt(g.f)} → ${fmt(g.t)} <span class="up">+${g.pct}%</span></small></div>${spark(g.vals.slice(-12))}</div>`).join('')}</div>`
+      : `<p class="muted small">${mine.length ? 'Gains show up after the same exercise is done on two different days.' : 'No workouts logged yet.'}</p>`}`;
+}
 
 function viewHistory(pid) {
   const p = profile(pid); if (!p) return notFound();
-  setTitle(`${p.name} · Progress`, `#/p/${pid}`); nav(pid, 'history');
+  setTitle(`${p.name} · Progress`, HOME); nav(pid, 'history');
   const mine = LOGS.filter((l) => live(l) && l.profile === pid);
   const days = [...new Set(mine.map((l) => l.day))].sort().reverse();
   const exs = [...new Set(mine.map((l) => l.ex))];
@@ -615,7 +693,7 @@ function viewHistoryEx(pid, ex) {
 
 function viewPlan(pid) {
   const p = profile(pid); const plan = S.plans[pid]; if (!plan) return notFound();
-  setTitle(`${p.name} · Plan`, `#/p/${pid}`); nav(pid, 'plan');
+  setTitle(`${p.name} · Plan`, HOME); nav(pid, 'plan');
   app().innerHTML = `
     <div class="card"><b>${esc(plan.title)}</b><br><small class="muted">Plan v${esc(plan.version)} · updated ${esc(plan.updated || '')}</small></div>
     <details class="card" open><summary>${I('shield')} Rules</summary><ul>${(plan.rules || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
@@ -627,9 +705,9 @@ function viewPlan(pid) {
 }
 
 function viewSettings(pid) {
-  setTitle('Settings', pid ? `#/p/${pid}` : '#/'); nav(pid, 'settings');
+  setTitle('Settings', HOME); nav(pid, 'settings');
   const last = LS.get('lastSync', 0);
-  const me = pid && profile(pid);
+  const me = profile(pid);
   app().innerHTML = `
     ${me ? `<div class="card"><h3>${I('camera')} Profile photo</h3>
       <div class="row">${avatar(me, 'big')}<div><button class="primary" id="setphoto">${Avatars.get(pid) ? 'Change photo' : 'Add photo'}</button>
@@ -639,22 +717,24 @@ function viewSettings(pid) {
     <div class="card"><h3>${I('share')} Share the app</h3><p class="muted">Send the Family Gym link to family or friends.</p>
       <button class="ghost" id="shareapp">${I('share')} Share Family Gym</button>
       ${SHELL ? '' : `<a class="btn ghost" href="${APK_URL}">${I('phone')} Get the Android app</a>`}</div>
-    <div class="card"><h3>${I('cloud')} Sync</h3>
-      ${!CLOUD ? '<p>This is the <b>demo</b>: logs are saved on this phone only. Cloud sync turns on when the family server is connected.</p>'
-        : Sync.authed() ? `<p>Signed in as the family. ${Sync.pending()} set(s) waiting.<br><small class="muted">Last sync: ${last ? new Date(last).toLocaleString() : 'never'}</small></p>
+    <div class="card"><h3>${I('cloud')} Account & sync</h3>
+      ${!CLOUD ? `<p>This is the <b>demo</b>: logs are saved on this phone only. Cloud sync turns on when the family server is connected.</p>
+            <button class="ghost" id="logout">Switch person</button>`
+        : `<p>Signed in as <b>${esc(me.name)}</b>. ${Sync.pending()} set(s) waiting.<br><small class="muted">Last sync: ${last ? new Date(last).toLocaleString() : 'never'}</small></p>
             ${Sync.err ? `<p class="badtxt">${esc(Sync.err)}</p>` : ''}
-            <button class="primary" id="syncnow">Sync now</button> <button class="ghost" id="logout">Sign out</button>`
-        : `<p>Enter the family code to save workouts to the cloud (once per phone).</p>
-            <input id="code" type="password" inputmode="numeric" placeholder="Family code" autocomplete="current-password">
-            <button class="primary" id="login">Sign in</button>`}
+            <button class="primary" id="syncnow">Sync now</button> <button class="ghost" id="logout">Sign out</button>
+            <details class="pinchange"><summary>${I('shield')} Change my PIN</summary>
+              <input id="newpin" type="password" inputmode="numeric" autocomplete="new-password" placeholder="New PIN (6–12 digits)" maxlength="12">
+              <input id="newpin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Type it again" maxlength="12">
+              <button class="primary" id="setpin">Save new PIN</button></details>`}
     </div>
     <div class="card"><h3>${I('clipboard')} Plans</h3><p class="muted">Plans load from the internet each time the app opens, so changes show up without an app update.</p>
       <ul>${S.index.profiles.map((p) => `<li>${esc(p.name)}: v${esc(S.plans[p.id]?.version || '?')}</li>`).join('')}</ul>
       <button class="ghost" id="reload">Reload plans now</button></div>
-    <div class="card"><h3>${I('download')} Backup</h3><p class="muted">Download every logged set as a spreadsheet (CSV).</p><button class="ghost" id="csv">Export CSV</button></div>
+    <div class="card"><h3>${I('download')} Backup</h3><p class="muted">Download all your logged sets as a spreadsheet (CSV).</p><button class="ghost" id="csv">Export CSV</button></div>
     <p class="muted small center">Family Gym v${APP_VERSION}<br>Exercise photos & base instructions: free-exercise-db (public domain).</p>`;
   $('#setphoto') && ($('#setphoto').onclick = () => pickPhoto(pid));
-  $('#rmphoto') && ($('#rmphoto').onclick = () => { if (confirm('Remove profile photo?')) { Avatars.set(pid, ''); route(); } });
+  $('#rmphoto') && ($('#rmphoto').onclick = async () => { if (await ask('Remove your profile photo?', 'Remove')) { Avatars.set(pid, ''); route(); } });
   $('#shareapp').onclick = () => share(inviteText(), 'Family Gym');
   $('#updweb') && ($('#updweb').onclick = applyWebUpdate);
   $('#updcheck').onclick = async () => {
@@ -664,27 +744,36 @@ function viewSettings(pid) {
     if (/settings$/.test(norm(location.hash))) route();
   };
   $('#syncnow') && ($('#syncnow').onclick = () => Sync.run().then(() => route()));
-  $('#logout') && ($('#logout').onclick = () => { if (confirm('Sign out? Unsynced sets stay on this phone.')) { Sync.logout(); route(); } });
-  $('#login') && ($('#login').onclick = async () => {
-    const b = $('#login'); b.disabled = true; b.textContent = 'Signing in…';
-    try { await Sync.login($('#code').value); toast('Signed in ✓'); await Sync.run(); }
-    catch (e) { toast('Wrong code or no internet'); }
-    route();
+  $('#logout').onclick = async () => {
+    if (CLOUD) {
+      const n = Sync.pending();
+      if (!(await ask(`Sign out of Family Gym?${n ? `<br><small>${n} set(s) haven't synced yet. They stay on this phone and sync when you sign in again.</small>` : ''}`, 'Sign out'))) return;
+      Sync.logout();
+    } else LS.del('profile');
+    enterHome();
+  };
+  $('#setpin') && ($('#setpin').onclick = async () => {
+    const a = $('#newpin').value.trim(), b2 = $('#newpin2').value.trim();
+    if (!/^\d{6,12}$/.test(a)) { toast('PIN must be 6–12 digits'); return; }
+    if (a !== b2) { toast("The two PINs don't match"); return; }
+    const b = $('#setpin'); b.disabled = true; b.textContent = 'Saving…';
+    try { await Sync.changePin(a); toast('PIN changed ✓'); route(); }
+    catch (e) { toast(e.status === 422 ? 'Pick a different PIN' : 'Could not change PIN. Check the internet.'); b.disabled = false; b.textContent = 'Save new PIN'; }
   });
   $('#reload').onclick = async () => { await loadData().catch(() => toast('Offline: using saved plans')); toast('Plans reloaded'); route(); };
   $('#csv').onclick = () => {
     const rows = [['date', 'profile', 'session', 'exercise', 'set', 'kg', 'reps']]
-      .concat(LOGS.filter(live).sort((a, b) => (a.day + a.profile + a.ex + a.set_no).localeCompare(b.day + b.profile + b.ex + b.set_no))
+      .concat(LOGS.filter((l) => live(l) && l.profile === pid).sort((a, b) => (a.day + a.ex + a.set_no).localeCompare(b.day + b.ex + b.set_no))
         .map((l) => [l.day, l.profile, l.session, exInfo(l.ex).name, l.set_no, l.kg ?? '', l.reps]));
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const name = `family-gym-${dayStr()}.csv`;
+    const name = `family-gym-${pid}-${dayStr()}.csv`;
     if (window.FamilyGymAndroid) { window.FamilyGymAndroid.saveFile(name, 'text/csv', csv); return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = name; a.click();
   };
 }
 
-function notFound() { setTitle('Not found', '#/'); nav(null); app().innerHTML = '<div class="card center"><p>That page does not exist.</p><a class="btn primary" href="#/">Home</a></div>'; }
+function notFound() { setTitle('Not found', HOME); nav(ME()); app().innerHTML = `<div class="card center"><p>That page does not exist.</p><a class="btn primary" href="${HOME}">Home</a></div>`; }
 
 /* ---------------- activity calendar, streaks & leaderboard ---------------- */
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -711,17 +800,21 @@ function stats(pid) {
       if (done(d)) best = Math.max(best, ++run); else if (isPlanned(plan, d) && d < today) run = 0;
     }
   }
-  const range = (start) => {
-    let n = 0, due = 0;
-    for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
-      if (done(d)) n++;
-      if (isPlanned(plan, d) && (d < today || done(d))) due++;
+  // Planned days only count from the first workout ever logged, so joining mid-week isn't "missed" days.
+  const startD = first ? new Date(first + 'T00:00:00') : today;
+  const range = (start, end = today) => {
+    let n = 0, due = 0, goal = 0;
+    for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+      if (d <= today && done(d)) n++;
+      if (d < startD || !isPlanned(plan, d)) continue;
+      goal++;
+      if (d < today || (d <= today && done(d))) due++;
     }
-    return { n, due, pct: due ? Math.min(100, Math.round((n / due) * 100)) : (n ? 100 : 0) };
+    return { n, due, goal, pct: due ? Math.min(100, Math.round((n / due) * 100)) : (n ? 100 : 0) };
   };
   const monday = addDays(today, -((today.getDay() + 6) % 7));
   const year = [...act.keys()].filter((k) => k > dayStr(addDays(today, -365))).length;
-  return { act, cur, best, total: act.size, year, week: range(monday), month: range(new Date(today.getFullYear(), today.getMonth(), 1)), monday };
+  return { act, cur, best, total: act.size, year, start: startD, week: range(monday, addDays(monday, 6)), month: range(new Date(today.getFullYear(), today.getMonth(), 1)), monday };
 }
 
 // LeetCode-style heatmap: one column per week (Mon at top), colour by sets logged that day.
@@ -773,30 +866,33 @@ function weekDots(pid, st) {
   const plan = S.plans[pid]; const today = midnight();
   return `<div class="wdots">${WEEK.map((w, i) => {
     const d = addDays(st.monday, i); const did = st.act.has(dayStr(d));
-    const c = did ? 'done' : d > today || dayStr(d) === dayStr(today) ? (isPlanned(plan, d) ? 'todo' : 'rest') : isPlanned(plan, d) ? 'miss' : 'rest';
+    const c = did ? 'done' : d > today || dayStr(d) === dayStr(today) ? (isPlanned(plan, d) ? 'todo' : 'rest') : isPlanned(plan, d) && d >= st.start ? 'miss' : 'rest';
     return `<span class="${c}" title="${DAY_NAME[w]}">${DAY_NAME[w][0]}</span>`;
   }).join('')}</div>`;
 }
 
-function viewBoard(pid) {
-  setTitle('Leaderboard', pid ? `#/p/${pid}` : '#/'); nav(pid, 'board');
+function viewBoard() {
+  const pid = ME();
+  setTitle('Leaderboard', HOME); nav(pid, 'board');
   const tab = LS.get('boardTab', 'week');
   const rows = ranking(tab);
-  const note = !CLOUD || !Sync.authed() ? '<p class="muted small center">Only workouts saved on this phone are counted. Sign in with the family code in Settings to compete with everyone.</p>' : '';
+  const note = !CLOUD ? '<p class="muted small center">Demo mode: only workouts saved on this phone are counted.</p>' : '';
   app().innerHTML = `<div class="seg">${BOARD_TABS.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="board">${rows.map((r) => {
       const st = r.st; const m = tab === 'all' ? null : st[tab];
-      return `<a class="brow ${r.rank === 1 && (m ? m.n : st.total) ? 'lead' : ''}" href="#/p/${r.p.id}/history" style="--c:${esc(r.p.color)}">
+      const mine = r.p.id === pid; const tag = mine ? 'a' : 'div';
+      return `<${tag} class="brow ${mine ? 'me' : ''} ${r.rank === 1 && (m ? m.n : st.total) ? 'lead' : ''}" ${mine ? `href="#/p/${pid}/history"` : ''} style="--c:${esc(r.p.color)}">
         <span class="medal">${rankBadge(r.rank)}</span>${avatar(r.p)}
-        <div class="bname"><b>${esc(r.p.name)}</b><small>${I('flame')} ${st.cur} day streak · best ${st.best}</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}</div>
-        <div class="bscore">${m ? `<b>${m.pct}%</b><small>${m.n}/${m.due} day${m.due === 1 ? '' : 's'}</small>` : `<b>${st.total}</b><small>days</small>`}</div></a>`;
+        <div class="bname"><b>${esc(r.p.name)}${mine ? ' <small class="you">You</small>' : ''}</b><small>${I('flame')} ${st.cur} day streak · best ${st.best}</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}
+          ${m ? `<div class="pbar"><i style="width:${Math.min(100, m.pct)}%"></i></div>` : ''}</div>
+        <div class="bscore">${m ? `<b>${m.due ? m.pct + '%' : '–'}</b><small>${m.due ? `${m.n}/${m.due}` : m.n} day${(m.due || m.n) === 1 ? '' : 's'}</small>` : `<b>${st.total}</b><small>days</small>`}</div></${tag}>`;
     }).join('')}</div>
     <p class="muted small center">${tab === 'all' ? 'Ranked by total workout days.' : 'Ranked by planned workout days done, so 5-day and 6-day plans compete fairly. Rest days never break a streak.'}</p>
     ${note}
     <button class="ghost wide" id="shareboard">${I('share')} Share standings</button>
-    <h3 class="sect">Last 4 months</h3>
-    ${rows.map((r) => `<div class="card"><div class="hm-head">${avatar(r.p)} <b>${esc(r.p.name)}</b> <span class="muted small">${r.st.year} days in the past year</span></div>${heatmap(r.p.id, 17, r.p.color)}</div>`).join('')}`;
-  document.querySelectorAll('.seg button').forEach((b) => { b.onclick = () => { LS.set('boardTab', b.dataset.tab); viewBoard(pid); }; });
+    <h3 class="sect">Progress</h3>
+    ${rows.map((r) => `<div class="card" style="--c:${esc(r.p.color)}"><div class="hm-head">${avatar(r.p)} <b>${esc(r.p.name)}</b> <span class="muted small">${r.st.year} days in the past year</span></div>${heatmap(r.p.id, 17, r.p.color)}${progressSummary(r.p.id)}</div>`).join('')}`;
+  document.querySelectorAll('.seg button').forEach((b) => { b.onclick = () => { LS.set('boardTab', b.dataset.tab); viewBoard(); }; });
   $('#shareboard').onclick = () => share(`Family Gym leaderboard · ${BOARD_TABS.find((t) => t[0] === tab)[1].toLowerCase()}\n\n${rows.map((r) => `${['🥇', '🥈', '🥉'][r.rank - 1] || r.rank + '.'} ${r.p.name}: ${tab === 'all' ? r.st.total + ' days' : r.st[tab].pct + '% (' + r.st[tab].n + '/' + r.st[tab].due + ' days)'} · 🔥 ${r.st.cur}`).join('\n')}\n\n${SITE_URL}`);
   wireHeatmaps();
 }
@@ -806,33 +902,41 @@ function route() {
   cur = norm(location.hash);
   const h = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   window.scrollTo(0, 0);
+  const me = ME();
+  if (!me) return viewLogin();
+  // Home is the signed-in person's Today. Everyone only sees their own screens plus the shared leaderboard.
+  const home = () => { history.replaceState(history.state, '', HOME); stackD[at()] = 0; cur = HOME; return viewProfile(me); };
   if (h[0] === 'p' && h[1]) {
     const pid = h[1];
-    if (!profile(pid)) { history.replaceState(history.state, '', HOME); return viewHome(); }
-    if (!h[2]) return viewProfile(pid);
-    if (h[2] === 'd') return viewProfile(pid, h[3]);
+    if (pid !== me || !h[2]) return home();
+    if (h[2] === 'd') return h[3] && h[3] !== todayKey() ? viewProfile(pid, h[3]) : home();
     if (h[2] === 's') return viewExercise(pid, h[3], +h[4] || 0);
     if (h[2] === 'history') return h[3] ? viewHistoryEx(pid, h[3]) : viewHistory(pid);
     if (h[2] === 'plan') return viewPlan(pid);
-    if (h[2] === 'board') return viewBoard(pid);
+    if (h[2] === 'board') return viewBoard();
     if (h[2] === 'settings') return viewSettings(pid);
   }
-  if (h[0] === 'settings') return viewSettings(profile(LS.get('profile', null)) ? LS.get('profile', null) : null);
-  if (h[0] === 'board') return viewBoard(null);
-  return viewHome();
+  if (h[0] === 'settings') return viewSettings(me);
+  if (h[0] === 'board') return viewBoard();
+  return h[0] ? home() : viewProfile(me);
 }
 
+// Called after sign-in / sign-out: reset the stack to a single Home entry.
+function enterHome() { history.replaceState({ i: 0 }, '', HOME); stackD = [0]; route(); paintSync(); }
+
 async function boot() {
-  $('#sync').onclick = () => go(`#/p/${LS.get('profile', 'papa')}/settings`);
+  $('#sync').onclick = () => ME() && go(`#/p/${ME()}/settings`);
   $('#timer-skip').onclick = () => Timer.stop();
   $('#timer-add').onclick = () => Timer.add(30);
   try { await loadData(); }
   catch (e) { app().innerHTML = `<div class="card center"><p>Couldn't load the plans. Check the internet and try again.</p><button class="primary" onclick="location.reload()">Retry</button></div>`; return; }
+  // v0.5.0 replaced the shared family sign-in with one sign-in per person.
+  const a = LS.get('auth', null);
+  if (a && !a.profile) Sync.logout();
   // Seed the stack as [home, start]; later entries are only added from taps (see go()).
-  const saved = LS.get('profile', null);
-  const start = location.hash ? norm(location.hash) : saved && profile(saved) ? `#/p/${saved}` : HOME;
+  const start = norm(location.hash);
   history.replaceState({ i: 0 }, '', HOME); stackD = [0];
-  if (start !== HOME) { history.pushState({ i: 1 }, '', start); stackD.push(depth(start)); }
+  if (depth(start) > 0) { history.pushState({ i: 1 }, '', start); stackD.push(depth(start)); }
   window.addEventListener('online', () => Sync.run());
   window.addEventListener('offline', paintSync);
   document.addEventListener('visibilitychange', () => {

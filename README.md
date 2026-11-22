@@ -45,9 +45,9 @@ Check locally with `node tools/validate.mjs`.
 
 Supabase stores **only** the logged sets in `set_log` (profile, day, exercise, set, kg, reps), plus one small profile photo per person in `avatar`.
 Plans and media are served from GitHub Pages. Every set is saved on the phone first and synced when online.
-Several phones can share data: everyone signs in once with the **family code**.
+Each person signs in once per phone with **their own PIN** (6–12 digits, changeable in Settings). Row-level security lets everyone read the family's sets for the shared leaderboard, but each account can only write its own sets and photo. Inside the app each person sees only their own screens plus the shared leaderboard.
 
-To set it up (one time): `.\supabase\setup.ps1 -AccessToken sbp_… -FamilyEmail <email>`. Then commit `config.js` and add the repo secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the keep-alive action.
+To set it up (one time): `.\supabase\setup.ps1 -AccessToken sbp_…` (creates one account per profile and prints the PINs). Then commit `config.js` and add the repo secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` for the keep-alive action.
 Without `config.js` settings the app runs in **demo mode** and stores logs on the phone only. (Cloud sync is live since 2026-11-22.)
 
 ## Credits

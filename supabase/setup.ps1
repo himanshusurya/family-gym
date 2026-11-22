@@ -2,15 +2,16 @@
 .SYNOPSIS
   One-time setup of the Family Gym Supabase project (free tier), then writes config.js.
 .EXAMPLE
-  .\supabase\setup.ps1 -AccessToken sbp_xxx -FamilyEmail family.gym@example.com
-  # Prints the 8-digit family code. Share it with the family; it is the app sign-in.
+  .\supabase\setup.ps1 -AccessToken sbp_xxx
+  # Creates one account per profile in plans/index.json and prints each person's 6-digit PIN.
+  # Re-running resets every PIN. People can change their own PIN in Settings.
 .NOTES
   Create the access token at https://supabase.com/dashboard/account/tokens (short expiry) and revoke it afterwards.
   Secrets are saved with DPAPI under $SecretDir.
 #>
 param(
   [Parameter(Mandatory)] [string] $AccessToken,
-  [Parameter(Mandatory)] [string] $FamilyEmail,
+  [string] $UserDomain = 'family-gym.invalid',  # accounts are <profile>@UserDomain; .invalid can never be a real domain
   [string] $ProjectName = 'family-gym',
   [string] $Region = 'ap-south-1',
   [string] $OrgId,
@@ -65,26 +66,32 @@ $url = "https://$ProjectRef.supabase.co"
 Write-Host 'Locking sign-ups…'
 Api PATCH "/projects/$ProjectRef/config/auth" @{ disable_signup = $true; mailer_autoconfirm = $true } | Out-Null
 
-$code = New-Secret 8
+# One account per person. app_metadata.profile (settable only with the service key) is what row-level security checks.
 $SH = @{ apikey = $service; Authorization = "Bearer $service" }
 $users = (Invoke-RestMethod "$url/auth/v1/admin/users?per_page=200" -Headers $SH).users
-$u = $users | Where-Object email -eq $FamilyEmail
-$body = @{ email = $FamilyEmail; password = $code; email_confirm = $true } | ConvertTo-Json
-if ($u) { Invoke-RestMethod -Method PUT "$url/auth/v1/admin/users/$($u.id)" -Headers $SH -Body $body -ContentType 'application/json' | Out-Null }
-else { Invoke-RestMethod -Method POST "$url/auth/v1/admin/users" -Headers $SH -Body $body -ContentType 'application/json' | Out-Null }
-Save-Secret 'family-code' $code
+$pins = [ordered]@{}
+foreach ($p in (Get-Content "$root\plans\index.json" -Raw | ConvertFrom-Json).profiles) {
+  $email = "$($p.id)@$UserDomain"; $pin = New-Secret 6
+  $body = @{ email = $email; password = $pin; email_confirm = $true; app_metadata = @{ profile = $p.id } } | ConvertTo-Json
+  $u = $users | Where-Object email -eq $email
+  if ($u) { Invoke-RestMethod -Method PUT "$url/auth/v1/admin/users/$($u.id)" -Headers $SH -Body $body -ContentType 'application/json' | Out-Null }
+  else { Invoke-RestMethod -Method POST "$url/auth/v1/admin/users" -Headers $SH -Body $body -ContentType 'application/json' | Out-Null }
+  Save-Secret "pin-$($p.id)" $pin
+  $pins[$p.name] = $pin
+}
 Save-Secret 'service-role-key' $service
 
 @"
 // Cloud sync settings. Leave supabaseUrl empty to run in demo mode (logs stay on the phone).
-// The anon key is public by design; the data is protected by the family sign-in plus row-level security.
+// The anon key is public by design; the data is protected by each person's PIN sign-in plus row-level security.
 window.FG_CONFIG = {
   supabaseUrl: '$url',
   anonKey: '$anon',
-  familyEmail: '$FamilyEmail',
+  // Accounts are <profile id>@userDomain (.invalid can never be a real domain).
+  userDomain: '$UserDomain',
 };
 "@ | Set-Content "$root\config.js" -Encoding utf8
 
 Write-Host "`n✅ Done. Project: $url"
-Write-Host "   Family code (app sign-in): $code"
+$pins.GetEnumerator() | ForEach-Object { Write-Host "   PIN for $($_.Key): $($_.Value)" }
 Write-Host "   Secrets saved in $SecretDir. Commit config.js and add repo secrets SUPABASE_URL / SUPABASE_ANON_KEY for keep-alive."

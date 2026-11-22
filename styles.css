@@ -62,6 +62,23 @@ ul.bad li::marker { content: '✕  '; color: var(--bad); }
 .pcard { display: flex; align-items: center; gap: .9rem; background: var(--s1); border: 1px solid var(--line); border-radius: 18px; padding: .95rem; position: relative; overflow: hidden; transition: border-color .15s; }
 .pcard::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c); }
 .pcard:active { border-color: var(--c); }
+button.pcard { width: 100%; text-align: left; color: inherit; font: inherit; font-weight: 400; justify-content: flex-start; margin-bottom: .6rem; }
+.pcard.sel { border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, var(--s1)); }
+.pcard .go { margin-left: auto; }
+.pinbox { margin-top: .4rem; } .pinbox input { margin: .4rem 0; font-size: 1.3rem; letter-spacing: .3em; text-align: center; }
+.pinchange { margin-top: .9rem; } .pinchange summary { cursor: pointer; color: var(--mut); } .pinchange input { margin: .4rem 0; }
+button.danger { background: var(--bad); color: #2a0707; font-weight: 700; }
+.brow .you { display: inline-block; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-pri); background: var(--pri); border-radius: 99px; padding: .05rem .4rem; vertical-align: .15em; }
+div.brow { cursor: default; }
+.pbar { height: 5px; border-radius: 99px; background: var(--s3); margin-top: .35rem; overflow: hidden; } .pbar i { display: block; height: 100%; background: var(--c); border-radius: inherit; }
+.prog { display: flex; gap: 1.2rem; margin: .8rem 0 .4rem; font-size: .85rem; color: var(--mut); } .prog b { color: var(--fg); font-size: 1.05rem; margin-right: .2rem; }
+.gains { display: grid; gap: .45rem; } .gain { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .5rem .65rem; background: var(--s2); border-radius: 12px; }
+.gain small { display: block; color: var(--mut); } .gain .up { color: var(--pri); font-weight: 700; } .gain .spark { width: 80px; flex: none; }
+.modal { position: fixed; inset: 0; z-index: 50; background: #000a; display: grid; place-items: end center; padding: 1rem; animation: fadein .15s; }
+.modal .sheet { width: 100%; max-width: 420px; background: var(--s2); border: 1px solid var(--line); border-radius: 20px; padding: 1.2rem; box-shadow: 0 10px 40px #000c; animation: up .18s ease-out; margin-bottom: env(safe-area-inset-bottom); }
+.modal .sheet p { margin: 0 0 1.1rem; font-size: 1.05rem; font-weight: 600; } .modal .sheet small { color: var(--mut); font-weight: 400; }
+.modal .sheet-b { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+@keyframes fadein { from { opacity: 0; } } @keyframes up { from { transform: translateY(30px); opacity: 0; } }
 .pinfo { flex: 1; min-width: 0; } .pinfo b { font-size: 1.2rem; display: block; } .pinfo small { color: var(--mut); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pill { display: inline-flex; align-items: center; gap: .2rem; font-weight: 700; font-size: .85rem; padding: .25rem .55rem; border-radius: 99px; background: var(--s3); color: var(--mut); }
 .pill.hot { background: #3a2410; color: #fdba74; }

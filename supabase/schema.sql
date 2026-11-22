@@ -24,8 +24,6 @@ create trigger set_log_touch before insert or update on public.set_log for each 
 alter table public.set_log enable row level security;
 revoke all on public.set_log from anon;
 grant select, insert, update on public.set_log to authenticated;
-drop policy if exists family_all on public.set_log;
-create policy family_all on public.set_log for all to authenticated using (true) with check (true);
 
 -- keep-alive target for the GitHub Action (free projects pause after 7 days idle)
 create or replace function public.ping() returns int language sql stable as $$ select 1 $$;
@@ -47,5 +45,20 @@ create trigger avatar_touch before insert or update on public.avatar for each ro
 alter table public.avatar enable row level security;
 revoke all on public.avatar from anon;
 grant select, insert, update on public.avatar to authenticated;
-drop policy if exists family_all on public.avatar;
-create policy family_all on public.avatar for all to authenticated using (true) with check (true);
+-- Per-person sign-in (v0.5.0): each account carries app_metadata.profile (only the service role can set it).
+-- Everyone in the family can read everything (leaderboard), but you can only write your own sets and photo.
+create or replace function public.my_profile() returns text language sql stable set search_path = '' as
+$$ select coalesce(auth.jwt() -> 'app_metadata' ->> 'profile', '') $$;
+revoke all on function public.my_profile() from public, anon;
+grant execute on function public.my_profile() to authenticated;
+do $$ declare t text; begin
+  foreach t in array array['set_log', 'avatar'] loop
+    execute format('drop policy if exists family_all on public.%I', t);
+    execute format('drop policy if exists family_read on public.%I', t);
+    execute format('drop policy if exists own_insert on public.%I', t);
+    execute format('drop policy if exists own_update on public.%I', t);
+    execute format('create policy family_read on public.%I for select to authenticated using (true)', t);
+    execute format('create policy own_insert on public.%I for insert to authenticated with check (profile = public.my_profile())', t);
+    execute format('create policy own_update on public.%I for update to authenticated using (profile = public.my_profile()) with check (profile = public.my_profile())', t);
+  end loop;
+end $$;
