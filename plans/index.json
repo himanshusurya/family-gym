@@ -1,0 +1,7 @@
+{
+  "profiles": [
+    { "id": "papa",     "name": "Papa",     "emoji": "👨🏻‍🦳", "color": "#d9772b", "plan": "papa.json" },
+    { "id": "mummy",    "name": "Mummy",    "emoji": "👩🏻",   "color": "#c2417a", "plan": "mummy.json" },
+    { "id": "himanshu", "name": "Himanshu", "emoji": "🧑🏻",   "color": "#2f6fe0", "plan": "himanshu.json" }
+  ]
+}

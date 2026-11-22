@@ -1,0 +1,82 @@
+{
+  "id": "papa",
+  "title": "Papa: 6-day plan",
+  "version": "1.1",
+  "updated": "2026-11-22",
+  "weekly": { "mon": "A1", "tue": "B1", "wed": "C1", "thu": "A2", "fri": "B2", "sat": "C2", "sun": null },
+  "warmup": { "min": 10, "steps": [
+    "5 min easy bike or treadmill walk",
+    "Joint circles: neck, shoulders, hips, knees, ankles (5 each way)",
+    "1 light set of the first exercise"
+  ]},
+  "finish": [
+    { "title": "Cardio", "min": 10, "text": "Brisk incline walk or bike. You should be able to talk, but not sing." },
+    { "title": "Cool-down", "min": 5, "text": "Slow walk, then gentle stretches (calves, hamstrings, chest, upper back). Hold 20–30 s, don't bounce." }
+  ],
+  "rules": [
+    "Breathe out on the effort. Never hold your breath.",
+    "Keep effort moderate: stop each set with 3–4 reps still in the tank. Never go to failure.",
+    "Skip the gym on any day with a fever, cold or infection.",
+    "Wipe machine handles before use; use your own towel and bottle; sanitise hands after.",
+    "Train 1–2 h after a meal, not on an empty stomach.",
+    "Walk 10–15 min after lunch and dinner every day, including Sunday.",
+    "Get up slowly from lying or seated positions.",
+    "Stop and sit down on chest pain, unusual breathlessness, dizziness, palpitations or joint pain."
+  ],
+  "progression": [
+    "Weeks 1–2: 1–2 light sets × 12–15 reps. Just learn the form.",
+    "Weeks 3–8: the sets below, stopping with 3–4 reps left.",
+    "Add weight only when every set reaches the top of the rep range with good form. Use the smallest step.",
+    "Every 8th week: halve the sets (recovery week)."
+  ],
+  "sessions": {
+    "A1": { "title": "Legs + Core/Balance", "items": [
+      { "ex": "leg-press",        "sets": 3, "reps": "10-15", "note": "Knees track over toes; hips stay on the pad" },
+      { "ex": "seated-leg-curl",  "sets": 3, "reps": "12-15", "note": "Count 3 on the way down" },
+      { "ex": "step-up",          "sets": 2, "reps": "10", "unit": "reps/leg", "load": "bw", "note": "Low box 15–20 cm, hold the rail" },
+      { "ex": "pallof-press",     "sets": 2, "reps": "10", "unit": "reps/side", "rest": 60 },
+      { "ex": "bird-dog",         "sets": 2, "reps": "8", "unit": "reps/side", "load": "bw", "rest": 45 },
+      { "ex": "single-leg-stand", "sets": 3, "reps": "20-30", "unit": "sec/leg", "load": "bw", "rest": 30 }
+    ]},
+    "B1": { "title": "Chest + Shoulders", "items": [
+      { "ex": "machine-chest-press",    "sets": 3, "reps": "10-15" },
+      { "ex": "pec-deck",               "sets": 2, "reps": "12-15", "note": "Light, don't over-stretch" },
+      { "ex": "machine-shoulder-press", "sets": 2, "reps": "10-12", "note": "Light. Only once BP is known to be OK", "alt": ["neutral-db-press"] },
+      { "ex": "seated-lateral-raise",   "sets": 2, "reps": "12-15", "note": "1–3 kg, up to shoulder height only" },
+      { "ex": "face-pull",              "sets": 2, "reps": "15" },
+      { "ex": "rope-pushdown",          "sets": 2, "reps": "12-15" }
+    ]},
+    "C1": { "title": "Back + Arms", "items": [
+      { "ex": "lat-pulldown",          "sets": 3, "reps": "10-12", "note": "To the upper chest, never behind the neck" },
+      { "ex": "seated-cable-row",      "sets": 3, "reps": "10-12", "note": "Chest tall, squeeze shoulder blades" },
+      { "ex": "straight-arm-pulldown", "sets": 2, "reps": "12-15" },
+      { "ex": "seated-db-curl",        "sets": 2, "reps": "10-15" },
+      { "ex": "hammer-curl",           "sets": 2, "reps": "10-12" },
+      { "ex": "overhead-cable-ext",    "sets": 2, "reps": "12-15", "note": "Light" }
+    ]},
+    "A2": { "title": "Legs + Core/Balance (B)", "items": [
+      { "ex": "box-squat",        "sets": 3, "reps": "10-15", "note": "Bodyweight first, then a light dumbbell" },
+      { "ex": "db-rdl",           "sets": 3, "reps": "10-12", "note": "Light (start 5 kg each hand). Lower only to just below the knees. Skip if the back hurts" },
+      { "ex": "calf-standing",    "sets": 2, "reps": "12-15", "note": "Hold support" },
+      { "ex": "dead-bug",         "sets": 2, "reps": "10", "unit": "reps/side", "load": "bw", "rest": 45 },
+      { "ex": "side-plank-knees", "sets": 2, "reps": "15-20", "unit": "sec/side", "load": "bw", "rest": 45 },
+      { "ex": "tandem-walk",      "sets": 3, "reps": "10", "unit": "steps", "load": "bw", "rest": 30 }
+    ]},
+    "B2": { "title": "Chest + Shoulders (B)", "items": [
+      { "ex": "incline-machine-press", "sets": 3, "reps": "10-15", "alt": ["incline-db-press"] },
+      { "ex": "incline-pushup",        "sets": 2, "reps": "12-15", "load": "bw", "note": "Hands on a bench" },
+      { "ex": "neutral-db-press",      "sets": 2, "reps": "10-12", "note": "Seated, back supported" },
+      { "ex": "cable-lateral-raise",   "sets": 2, "reps": "12-15" },
+      { "ex": "band-pull-apart",       "sets": 2, "reps": "15", "load": "bw" },
+      { "ex": "rope-pushdown",         "sets": 2, "reps": "12-15" }
+    ]},
+    "C2": { "title": "Back + Arms (B)", "items": [
+      { "ex": "assisted-pullup",     "sets": 3, "reps": "10-12", "note": "Weight = assistance (more = easier). Start heavy" },
+      { "ex": "chest-supported-row", "sets": 3, "reps": "10-12" },
+      { "ex": "back-extension",      "sets": 2, "reps": "12-15", "load": "bw", "note": "Only if no back pain. Up to a straight line only", "alt": ["superman"] },
+      { "ex": "cable-curl",          "sets": 2, "reps": "10-15" },
+      { "ex": "farmers-carry",       "sets": 3, "reps": "20", "unit": "m", "note": "Light dumbbells" },
+      { "ex": "rope-pushdown",       "sets": 2, "reps": "12-15", "alt": ["bench-dip"] }
+    ]}
+  }
+}

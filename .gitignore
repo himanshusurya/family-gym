@@ -1,0 +1,5 @@
+tools/fedb.json
+_site/
+node_modules/
+test/shots/
+*.dpapi
