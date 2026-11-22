@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.2.0';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -135,10 +135,10 @@ const Sync = {
         saveLogs();
       }
       // pull (other phones)
-      let since = LS.get('pullSince', '1970-01-01T00:00:00Z');
+      let since = LS.get('pullSince', '1970-01-01T00:00:00Z'); let pulled = 0;
       for (;;) {
         const r = await this.api(`set_log?select=cid,profile,day,session,ex,set_no,kg,reps,deleted,updated_at,srv_at&srv_at=gt.${encodeURIComponent(since)}&order=srv_at.asc&limit=1000`);
-        const rows = await r.json();
+        const rows = await r.json(); pulled += rows.length;
         const byCid = new Map(LOGS.map((l, i) => [l.cid, i]));
         for (const row of rows) {
           const i = byCid.get(row.cid);
@@ -152,7 +152,7 @@ const Sync = {
       }
       LS.set('lastSync', Date.now());
       this.err = '';
-      if (location.hash.includes('/history') || location.hash.includes('/s/')) route();
+      if (pulled && /\/history|\/s\/|board|^#?\/?$/.test(location.hash)) route();
     } catch (e) { this.err = e.message; }
     finally { this.busy = false; paintSync(); }
   },
@@ -219,7 +219,7 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2500);
 }
 function nav(pid, active) {
-  const tabs = [['today', 'Today', '🏋️'], ['history', 'History', '📈'], ['plan', 'Plan', '📋'], ['settings', 'Settings', '⚙️']];
+  const tabs = [['today', 'Today', '🏋️'], ['history', 'History', '📈'], ['board', 'Board', '🏆'], ['plan', 'Plan', '📋'], ['settings', 'Settings', '⚙️']];
   $('#nav').innerHTML = pid ? tabs.map(([k, l, i]) =>
     `<a href="#/p/${pid}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${i}</span>${l}</a>`).join('') : '';
   $('#nav').hidden = !pid;
@@ -236,7 +236,9 @@ function viewHome() {
       const sess = sk ? plan.sessions[sk] : null;
       return `<a class="pcard" href="#/p/${p.id}" style="--c:${esc(p.color)}">${avatar(p, true)}
         <div><b>${esc(p.name)}</b><small>${plan ? (sess ? 'Today: ' + esc(sess.title) : 'Rest day 😌') : 'Plan not loaded'}</small></div></a>`;
-    }).join('')}</div>`;
+    }).join('')}</div>
+    <a class="card boardteaser" href="#/board"><h3>🏆 Leaderboard · this week</h3>
+      ${ranking('week').map((r) => `<div class="tline"><i>${medal(r.rank)}</i>${avatar(r.p)}<b>${esc(r.p.name)}</b><span>${r.st.week.pct}% · 🔥 ${r.st.cur}</span></div>`).join('')}</a>`;
 }
 
 function weekStrip(pid, plan, selected) {
@@ -254,7 +256,8 @@ function viewProfile(pid, day) {
   setTitle(p.name, '#/'); nav(pid, 'today');
   const d = day || todayKey();
   const sk = plan.weekly[d];
-  app().innerHTML = `${weekStrip(pid, plan, d)}` + (sk ? sessionBody(pid, plan, sk, d) : `
+  const st = stats(pid);
+  app().innerHTML = `<a class="streak" href="#/p/${pid}/board">🔥 ${st.cur} day streak · ${st.week.n} workout${st.week.n === 1 ? '' : 's'} this week <span>🏆 ›</span></a>${weekStrip(pid, plan, d)}` + (sk ? sessionBody(pid, plan, sk, d) : `
     <div class="card center rest-card"><div class="big">😌</div><h2>Rest day</h2>
     <p class="muted">${pid === 'himanshu' ? 'Recover. Hit your steps.' : 'Easy walk after lunch and dinner.'}</p></div>`);
 }
@@ -390,17 +393,16 @@ function viewHistory(pid) {
   const exs = [...new Set(mine.map((l) => l.ex))];
   const lastDay = (ex) => mine.filter((l) => l.ex === ex).reduce((m, l) => (l.day > m ? l.day : m), '');
   exs.sort((a, b) => lastDay(b).localeCompare(lastDay(a)));
-  const weekAgo = dayStr(new Date(Date.now() - 6 * 864e5));
-  app().innerHTML = !mine.length ? `<div class="card center"><div class="big">📈</div><p>No sets logged yet. Your progress shows up here.</p></div>` : `
-    <div class="stats"><div><b>${days.filter((d) => d >= weekAgo).length}</b><small>days this week</small></div>
-      <div><b>${days.length}</b><small>total days</small></div><div><b>${mine.length}</b><small>sets logged</small></div></div>
+  app().innerHTML = activityCard(pid) + (!mine.length ? `<div class="card center"><div class="big">📈</div><p>No sets logged yet. Your progress shows up here.</p></div>` : `
+    <p class="muted small center">${mine.length} sets logged in total</p>
     <h3>By exercise</h3>
     <div class="hist">${exs.map((ex) => {
       const best = bestPerDay(mine.filter((l) => l.ex === ex)); const b = best[best.length - 1];
       const vals = best.map((x) => (+x.kg || 0) || x.reps);
       return `<a class="hrow" href="#/p/${pid}/history/${encodeURIComponent(ex)}"><div><b>${esc(exInfo(ex).name)}</b>
         <small>${fmtDay(b.day)} · best ${b.kg ? +b.kg + ' kg × ' : ''}${b.reps}</small></div>${spark(vals.slice(-12))}</a>`;
-    }).join('')}</div>`;
+    }).join('')}</div>`);
+  wireHeatmaps();
 }
 
 function viewHistoryEx(pid, ex) {
@@ -466,6 +468,119 @@ function viewSettings(pid) {
 
 function notFound() { setTitle('Not found', '#/'); nav(null); app().innerHTML = '<div class="card center"><p>That page does not exist.</p><a class="btn primary" href="#/">Home</a></div>'; }
 
+/* ---------------- activity calendar, streaks & leaderboard ---------------- */
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const midnight = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+function activity(pid) {
+  const m = new Map();
+  for (const l of LOGS) if (live(l) && l.profile === pid) m.set(l.day, (m.get(l.day) || 0) + 1);
+  return m;
+}
+const isPlanned = (plan, d) => !!plan?.weekly?.[JS_DAY[d.getDay()]];
+
+// A streak counts workout days; planned rest days never break it, and today only counts once done.
+function stats(pid) {
+  const plan = S.plans[pid]; const act = activity(pid); const today = midnight();
+  const done = (d) => act.has(dayStr(d));
+  let cur = 0;
+  for (let d = done(today) ? today : addDays(today, -1), i = 0; i < 1000; i++, d = addDays(d, -1)) {
+    if (done(d)) cur++; else if (isPlanned(plan, d)) break;
+  }
+  let best = 0, run = 0;
+  const first = [...act.keys()].sort()[0];
+  if (first) {
+    for (let d = new Date(first + 'T00:00:00'); d <= today; d = addDays(d, 1)) {
+      if (done(d)) best = Math.max(best, ++run); else if (isPlanned(plan, d) && d < today) run = 0;
+    }
+  }
+  const range = (start) => {
+    let n = 0, due = 0;
+    for (let d = new Date(start); d <= today; d = addDays(d, 1)) {
+      if (done(d)) n++;
+      if (isPlanned(plan, d) && (d < today || done(d))) due++;
+    }
+    return { n, due, pct: due ? Math.min(100, Math.round((n / due) * 100)) : (n ? 100 : 0) };
+  };
+  const monday = addDays(today, -((today.getDay() + 6) % 7));
+  const year = [...act.keys()].filter((k) => k > dayStr(addDays(today, -365))).length;
+  return { act, cur, best, total: act.size, year, week: range(monday), month: range(new Date(today.getFullYear(), today.getMonth(), 1)), monday };
+}
+
+// LeetCode-style heatmap: one column per week (Mon at top), colour by sets logged that day.
+function heatmap(pid, weeks, color) {
+  const { act } = stats(pid); const today = midnight();
+  const start = addDays(today, -((today.getDay() + 6) % 7) - (weeks - 1) * 7);
+  const lvl = (n) => (!n ? 0 : n <= 5 ? 1 : n <= 12 ? 2 : n <= 20 ? 3 : 4);
+  let cells = '', months = '', lastM = -1;
+  for (let w = 0; w < weeks; w++) {
+    const wk = addDays(start, w * 7);
+    const m = wk.getMonth();
+    months += `<span>${m !== lastM && (w > 0 || wk.getDate() <= 7) ? wk.toLocaleDateString(undefined, { month: 'short' }) : ''}</span>`;
+    lastM = m;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(wk, i); const k = dayStr(d); const n = act.get(k) || 0;
+      cells += d > today ? '<i class="f"></i>'
+        : `<i class="l${lvl(n)}${k === dayStr(today) ? ' t' : ''}" data-t="${esc(fmtDay(k))}: ${n ? n + ' set' + (n > 1 ? 's' : '') : 'no workout'}"></i>`;
+    }
+  }
+  return `<div class="hm-wrap"><div class="hm-days"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+    <div class="hm-scroll"><div class="hm-months" style="grid-template-columns:repeat(${weeks},var(--hc))">${months}</div>
+    <div class="hm" style="--hcol:${esc(color)}">${cells}</div></div></div>`;
+}
+function wireHeatmaps() {
+  document.querySelectorAll('.hm-scroll').forEach((s) => { s.scrollLeft = s.scrollWidth; });
+  document.querySelectorAll('.hm').forEach((h) => { h.onclick = (e) => e.target.dataset.t && toast(e.target.dataset.t); });
+}
+const hmLegend = (color) => `<div class="hm-legend" style="--hcol:${esc(color)}">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</div>`;
+
+function activityCard(pid) {
+  const p = profile(pid); const st = stats(pid);
+  return `<div class="card"><div class="hm-head"><h3>${st.year} workout day${st.year === 1 ? '' : 's'} in the past year</h3></div>
+    ${heatmap(pid, 53, p.color)}${hmLegend(p.color)}
+    <div class="stats4"><div><b>🔥 ${st.cur}</b><small>Current streak</small></div><div><b>${st.best}</b><small>Best streak</small></div>
+    <div><b>${st.month.n}</b><small>Days this month</small></div><div><b>${st.total}</b><small>Total days</small></div></div></div>`;
+}
+
+const BOARD_TABS = [['week', 'This week'], ['month', 'This month'], ['all', 'All time']];
+function ranking(tab) {
+  const rows = S.index.profiles.filter((p) => S.plans[p.id]).map((p) => ({ p, st: stats(p.id) }));
+  const key = (r) => (tab === 'all' ? [r.st.total, r.st.best, r.st.cur] : [r.st[tab].pct, r.st[tab].n, r.st.cur]);
+  rows.sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; });
+  let rank = 0, prev = null;
+  rows.forEach((r, i) => { const k = key(r).join(); if (k !== prev) rank = i + 1; prev = k; r.rank = rank; });
+  return rows;
+}
+const medal = (r) => ['🥇', '🥈', '🥉'][r - 1] || `#${r}`;
+function weekDots(pid, st) {
+  const plan = S.plans[pid]; const today = midnight();
+  return `<div class="wdots">${WEEK.map((w, i) => {
+    const d = addDays(st.monday, i); const did = st.act.has(dayStr(d));
+    const c = did ? 'done' : d > today || dayStr(d) === dayStr(today) ? (isPlanned(plan, d) ? 'todo' : 'rest') : isPlanned(plan, d) ? 'miss' : 'rest';
+    return `<span class="${c}" title="${DAY_NAME[w]}">${DAY_NAME[w][0]}</span>`;
+  }).join('')}</div>`;
+}
+
+function viewBoard(pid) {
+  setTitle('Leaderboard', pid ? `#/p/${pid}` : '#/'); nav(pid, 'board');
+  const tab = LS.get('boardTab', 'week');
+  const rows = ranking(tab);
+  const note = !CLOUD || !Sync.authed() ? '<p class="muted small center">Only workouts saved on this phone are counted. Sign in with the family code in Settings to compete with everyone.</p>' : '';
+  app().innerHTML = `<div class="seg">${BOARD_TABS.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="board">${rows.map((r) => {
+      const st = r.st; const m = tab === 'all' ? null : st[tab];
+      return `<a class="brow ${r.rank === 1 && (m ? m.n : st.total) ? 'lead' : ''}" href="#/p/${r.p.id}/history" style="--c:${esc(r.p.color)}">
+        <span class="medal">${medal(r.rank)}</span>${avatar(r.p)}
+        <div class="bname"><b>${esc(r.p.name)}</b><small>🔥 ${st.cur} day streak · best ${st.best}</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}</div>
+        <div class="bscore">${m ? `<b>${m.pct}%</b><small>${m.n}/${m.due} day${m.due === 1 ? '' : 's'}</small>` : `<b>${st.total}</b><small>days</small>`}</div></a>`;
+    }).join('')}</div>
+    <p class="muted small center">${tab === 'all' ? 'Ranked by total workout days.' : 'Ranked by planned workout days done, so 5-day and 6-day plans compete fairly. Rest days never break a streak.'}</p>
+    ${note}
+    <h3 class="sect">Last 4 months</h3>
+    ${rows.map((r) => `<div class="card"><div class="hm-head">${avatar(r.p)} <b>${esc(r.p.name)}</b> <span class="muted small">${r.st.year} days in the past year</span></div>${heatmap(r.p.id, 17, r.p.color)}</div>`).join('')}`;
+  document.querySelectorAll('.seg button').forEach((b) => { b.onclick = () => { LS.set('boardTab', b.dataset.tab); viewBoard(pid); }; });
+  wireHeatmaps();
+}
+
 /* ---------------- router ---------------- */
 function route() {
   const h = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
@@ -477,9 +592,11 @@ function route() {
     if (h[2] === 's') return viewExercise(pid, h[3], +h[4] || 0);
     if (h[2] === 'history') return h[3] ? viewHistoryEx(pid, h[3]) : viewHistory(pid);
     if (h[2] === 'plan') return viewPlan(pid);
+    if (h[2] === 'board') return viewBoard(pid);
     if (h[2] === 'settings') return viewSettings(pid);
   }
   if (h[0] === 'settings') return viewSettings(LS.get('profile', null));
+  if (h[0] === 'board') return viewBoard(null);
   return viewHome();
 }
 
