@@ -1,7 +1,7 @@
 {
   "id": "himanshu",
-  "title": "Himanshu: spine-safe Upper/Lower v4 (6 days)",
-  "version": "4.0",
+  "title": "Himanshu: spine-safe Upper/Lower v5 (5 days, Mon–Fri)",
+  "version": "5.0",
   "updated": "2026-11-22",
   "weekly": {
     "mon": "UA",
@@ -9,7 +9,7 @@
     "wed": "UB",
     "thu": "LB",
     "fri": "D5",
-    "sat": "D6",
+    "sat": null,
     "sun": null
   },
   "warmup": {
@@ -23,9 +23,9 @@
   },
   "finish": [
     {
-      "title": "Cardio (2–4×/week)",
+      "title": "Cardio (Tue, Thu, Fri)",
       "min": 25,
-      "text": "Incline walk or bike, Zone 2. Aim for 8–10k steps a day."
+      "text": "Incline walk or bike, Zone 2 (you can still talk). Plus 8–10k steps every day, weekends included."
     }
   ],
   "rules": [
@@ -33,90 +33,79 @@
     "Avoid: barbell back squat, floor deadlift, standing barbell OHP, bent-over barbell row, good mornings, weighted sit-ups/twists.",
     "No heavy training in the first hour after waking.",
     "Stop on any pain, numbness or tingling into the buttock or leg.",
-    "Saturday (Day 6) is a lighter pump day: leave 2–3 reps in reserve. Skip it if you slept under 6 h or your back feels tight. Sunday is full rest."
+    "Missed a day? Do the next session in order the next day. In a short week, drop Friday first: Mon–Thu already trains everything twice.",
+    "Short on time? Do the first 4 exercises (marked ★). That is the minimum session.",
+    "Saturday and Sunday: rest, plus walking."
   ],
   "progression": [
-    "Double progression: add reps each week; when all sets hit the top of the range, add the smallest load.",
+    "Week 1 of v5 is a re-entry week: 2 sets per exercise, about 10% lighter, 3 reps in reserve.",
+    "Then double progression: add reps each week; when all sets hit the top of the range, add the smallest load.",
     "1–2 reps in reserve on compounds, 0–1 on isolations. Never grind under spinal load.",
-    "Rest 2–3 min on compounds, 60–90 s on isolations.",
-    "Deload (half the volume) every 6–8 weeks."
+    "Rest 2–3 min on compounds, 60–90 s on isolations. Supersets marked \"SS\" save time.",
+    "Deload (half the sets) every 6th week, or after any gap of 7+ days."
   ],
   "sessions": {
     "UA": {
-      "title": "Upper A: Push",
+      "title": "Upper A: Push (~60 min)",
       "items": [
         {
           "ex": "incline-db-press",
           "sets": 4,
           "reps": "8-12",
-          "note": "Back supported",
+          "note": "★ Back supported",
           "rest": 150
         },
         {
           "ex": "machine-chest-press",
           "sets": 3,
-          "reps": "10-12",
-          "rest": 150
-        },
-        {
-          "ex": "pec-deck",
-          "sets": 3,
-          "reps": "12-15",
-          "alt": [
-            "cable-fly"
-          ],
-          "rest": 75
-        },
-        {
-          "ex": "machine-shoulder-press",
-          "sets": 3,
           "reps": "8-12",
-          "rest": 150
+          "note": "★",
+          "rest": 120
+        },
+        {
+          "ex": "lat-pulldown",
+          "sets": 3,
+          "reps": "10-12",
+          "note": "★",
+          "rest": 120
         },
         {
           "ex": "cable-lateral-raise",
           "sets": 4,
           "reps": "12-20",
-          "rest": 75
+          "note": "★",
+          "rest": 60
         },
         {
           "ex": "chest-supported-row",
           "sets": 3,
           "reps": "10-12",
           "note": "Pad takes the lumbar load",
-          "rest": 150
-        },
-        {
-          "ex": "db-shrug",
-          "sets": 3,
-          "reps": "12-15",
-          "alt": [
-            "cable-shrug"
-          ],
-          "rest": 75
+          "rest": 120
         },
         {
           "ex": "rope-pushdown",
           "sets": 3,
           "reps": "10-15",
-          "rest": 75
+          "note": "SS with overhead extension",
+          "rest": 60
         },
         {
           "ex": "overhead-cable-ext",
           "sets": 2,
           "reps": "12-15",
-          "rest": 75
+          "rest": 60
         }
       ]
     },
     "LA": {
-      "title": "Lower A: Quad",
+      "title": "Lower A: Quad (~55 min)",
       "items": [
         {
           "ex": "leg-press",
           "sets": 4,
           "reps": "10-12",
-          "note": "Controlled range: stop before the hips tuck",
+          "note": "★ Controlled range: stop before the hips tuck",
           "rest": 150
         },
         {
@@ -124,33 +113,28 @@
           "sets": 3,
           "reps": "10",
           "unit": "reps/leg",
-          "note": "Upright, light, chest tall",
-          "rest": 150
+          "note": "★ Upright, light, chest tall",
+          "rest": 120
         },
         {
           "ex": "leg-extension",
           "sets": 3,
           "reps": "12-15",
+          "note": "★",
           "rest": 75
         },
         {
           "ex": "seated-leg-curl",
           "sets": 3,
           "reps": "10-12",
+          "note": "★",
           "rest": 75
-        },
-        {
-          "ex": "hip-thrust",
-          "sets": 3,
-          "reps": "10-12",
-          "note": "Spine neutral and supported",
-          "rest": 150
         },
         {
           "ex": "calf-seated",
           "sets": 4,
           "reps": "12-15",
-          "rest": 75
+          "rest": 60
         },
         {
           "ex": "mcgill-curl-up",
@@ -158,7 +142,7 @@
           "reps": "8",
           "unit": "sec hold",
           "load": "bw",
-          "note": "McGill Big 3",
+          "note": "McGill Big 3, as a circuit",
           "rest": 30
         },
         {
@@ -178,74 +162,58 @@
           "load": "bw",
           "note": "McGill Big 3",
           "rest": 30
-        },
-        {
-          "ex": "pallof-press",
-          "sets": 3,
-          "reps": "10",
-          "unit": "reps/side",
-          "rest": 45
         }
       ]
     },
     "UB": {
-      "title": "Upper B: Pull",
+      "title": "Upper B: Pull (~60 min)",
       "items": [
         {
           "ex": "lat-pulldown",
           "sets": 4,
-          "reps": "10-12",
+          "reps": "8-12",
+          "note": "★ Wide grip for V-taper width",
           "rest": 150
         },
         {
-          "ex": "straight-arm-pulldown",
+          "ex": "seated-cable-row",
           "sets": 3,
-          "reps": "12-15",
-          "rest": 75
-        },
-        {
-          "ex": "chest-supported-row",
-          "sets": 4,
           "reps": "10-12",
+          "note": "★ Chest tall, no lower-back swing",
           "alt": [
-            "seated-cable-row"
+            "chest-supported-row"
           ],
-          "rest": 150
+          "rest": 120
         },
         {
           "ex": "incline-db-press",
           "sets": 3,
           "reps": "8-12",
-          "rest": 150
+          "note": "★",
+          "rest": 120
         },
         {
           "ex": "db-lateral-raise",
           "sets": 4,
           "reps": "12-20",
-          "rest": 75
-        },
-        {
-          "ex": "face-pull",
-          "sets": 3,
-          "reps": "15-20",
-          "rest": 75
+          "note": "★",
+          "rest": 60
         },
         {
           "ex": "reverse-pec-deck",
           "sets": 3,
           "reps": "15-20",
-          "note": "Alternate weekly with the cable version",
           "alt": [
             "cable-rear-delt-fly"
           ],
-          "rest": 75
+          "rest": 60
         },
         {
           "ex": "incline-db-curl",
           "sets": 3,
           "reps": "10-12",
-          "note": "Superset with hammer curl",
-          "rest": 75
+          "note": "SS with hammer curl",
+          "rest": 60
         },
         {
           "ex": "hammer-curl",
@@ -254,59 +222,46 @@
           "alt": [
             "cable-hammer-curl"
           ],
-          "rest": 75
-        },
-        {
-          "ex": "wrist-curl",
-          "sets": 2,
-          "reps": "15-20",
-          "note": "Seated, forearms on thighs",
-          "rest": 75
-        },
-        {
-          "ex": "reverse-wrist-curl",
-          "sets": 2,
-          "reps": "15-20",
-          "note": "Seated, forearms on thighs",
-          "rest": 75
+          "rest": 60
         }
       ]
     },
     "LB": {
-      "title": "Lower B: Posterior/Glute",
+      "title": "Lower B: Posterior/Glute (~55 min)",
       "items": [
         {
-          "ex": "db-rdl",
-          "sets": 3,
-          "reps": "10-12",
-          "note": "Light, neutral spine, pain-free only",
-          "alt": [
-            "back-extension"
-          ],
+          "ex": "hip-thrust",
+          "sets": 4,
+          "reps": "8-12",
+          "note": "★ Spine neutral and supported",
           "rest": 150
         },
         {
           "ex": "lying-leg-curl",
           "sets": 4,
           "reps": "10-12",
+          "note": "★",
           "rest": 75
         },
         {
           "ex": "hack-squat",
           "sets": 3,
           "reps": "10-12",
-          "note": "Or feet-high leg press",
+          "note": "★ Or feet-high leg press",
           "alt": [
             "leg-press"
           ],
           "rest": 150
         },
         {
-          "ex": "pull-through",
+          "ex": "db-rdl",
           "sets": 3,
-          "reps": "12-15",
-          "note": "Light",
-          "rest": 75
+          "reps": "10-12",
+          "note": "★ Light, neutral spine, pain-free only",
+          "alt": [
+            "back-extension"
+          ],
+          "rest": 120
         },
         {
           "ex": "cable-hip-abduction",
@@ -323,124 +278,6 @@
           "sets": 4,
           "reps": "12-15",
           "note": "Supported",
-          "rest": 75
-        },
-        {
-          "ex": "pallof-press",
-          "sets": 3,
-          "reps": "10",
-          "unit": "reps/side",
-          "rest": 45
-        },
-        {
-          "ex": "dead-bug",
-          "sets": 3,
-          "reps": "8",
-          "unit": "reps/side",
-          "load": "bw",
-          "rest": 30
-        },
-        {
-          "ex": "side-plank",
-          "sets": 3,
-          "reps": "15-20",
-          "unit": "sec/side",
-          "load": "bw",
-          "rest": 30
-        }
-      ]
-    },
-    "D5": {
-      "title": "Day 5: Shoulders + Arms",
-      "items": [
-        {
-          "ex": "machine-shoulder-press",
-          "sets": 3,
-          "reps": "8-12",
-          "alt": [
-            "seated-db-press"
-          ],
-          "rest": 150
-        },
-        {
-          "ex": "cable-lateral-raise",
-          "sets": 4,
-          "reps": "15-20",
-          "rest": 75
-        },
-        {
-          "ex": "face-pull",
-          "sets": 3,
-          "reps": "20",
-          "rest": 75
-        },
-        {
-          "ex": "incline-db-curl",
-          "sets": 3,
-          "reps": "10-12",
-          "rest": 75
-        },
-        {
-          "ex": "cable-curl",
-          "sets": 3,
-          "reps": "12-15",
-          "rest": 75
-        },
-        {
-          "ex": "rope-pushdown",
-          "sets": 3,
-          "reps": "12-15",
-          "rest": 75
-        },
-        {
-          "ex": "overhead-cable-ext",
-          "sets": 3,
-          "reps": "12-15",
-          "rest": 75
-        }
-      ]
-    },
-    "D6": {
-      "title": "Day 6: Chest + Lats + Core (light)",
-      "items": [
-        {
-          "ex": "machine-chest-press",
-          "sets": 3,
-          "reps": "10-12",
-          "note": "2–3 reps in reserve",
-          "rest": 120
-        },
-        {
-          "ex": "cable-fly",
-          "sets": 3,
-          "reps": "12-15",
-          "note": "Low-to-high for the upper chest",
-          "alt": [
-            "pec-deck"
-          ],
-          "rest": 75
-        },
-        {
-          "ex": "lat-pulldown",
-          "sets": 3,
-          "reps": "10-12",
-          "note": "Wide grip for V-taper width",
-          "rest": 120
-        },
-        {
-          "ex": "seated-cable-row",
-          "sets": 3,
-          "reps": "12",
-          "note": "Chest tall, no lower-back swing",
-          "alt": [
-            "chest-supported-row"
-          ],
-          "rest": 90
-        },
-        {
-          "ex": "calf-seated",
-          "sets": 3,
-          "reps": "15-20",
           "rest": 60
         },
         {
@@ -457,14 +294,67 @@
           "unit": "reps/side",
           "load": "bw",
           "rest": 30
+        }
+      ]
+    },
+    "D5": {
+      "title": "Day 5: Shoulders + Arms + Upper chest (~50 min)",
+      "items": [
+        {
+          "ex": "machine-shoulder-press",
+          "sets": 3,
+          "reps": "8-12",
+          "note": "★",
+          "alt": [
+            "seated-db-press"
+          ],
+          "rest": 120
         },
         {
-          "ex": "bird-dog",
-          "sets": 2,
-          "reps": "8",
-          "unit": "reps/side",
-          "load": "bw",
-          "rest": 30
+          "ex": "cable-lateral-raise",
+          "sets": 4,
+          "reps": "15-20",
+          "note": "★",
+          "rest": 60
+        },
+        {
+          "ex": "cable-fly",
+          "sets": 3,
+          "reps": "12-15",
+          "note": "★ Low-to-high for the upper chest",
+          "alt": [
+            "pec-deck"
+          ],
+          "rest": 60
+        },
+        {
+          "ex": "face-pull",
+          "sets": 3,
+          "reps": "15-20",
+          "note": "★",
+          "rest": 60
+        },
+        {
+          "ex": "cable-curl",
+          "sets": 3,
+          "reps": "12-15",
+          "note": "SS with overhead extension",
+          "rest": 60
+        },
+        {
+          "ex": "overhead-cable-ext",
+          "sets": 3,
+          "reps": "12-15",
+          "rest": 60
+        },
+        {
+          "ex": "db-shrug",
+          "sets": 3,
+          "reps": "12-15",
+          "alt": [
+            "cable-shrug"
+          ],
+          "rest": 60
         }
       ]
     }
