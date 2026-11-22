@@ -1,7 +1,7 @@
 {
   "id": "himanshu",
   "title": "Himanshu: spine-safe Upper/Lower v5 (5 days, Mon–Fri)",
-  "version": "5.0",
+  "version": "5.1",
   "updated": "2026-11-22",
   "weekly": {
     "mon": "UA",
@@ -200,12 +200,10 @@
           "rest": 60
         },
         {
-          "ex": "reverse-pec-deck",
+          "ex": "cable-rear-delt-fly",
           "sets": 3,
           "reps": "15-20",
-          "alt": [
-            "cable-rear-delt-fly"
-          ],
+          "note": "Or chest-supported DB rear-delt raise (face down on a 30° incline bench)",
           "rest": 60
         },
         {
