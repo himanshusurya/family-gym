@@ -83,7 +83,9 @@ public class MainActivity extends Activity {
         v.setOnApplyWindowInsetsListener((view, insets) -> {
             android.graphics.Insets i = insets.getInsets(
                     WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-            view.setPadding(i.left, i.top, i.right, i.bottom);
+            // Edge-to-edge ignores adjustResize, so lift the page above the keyboard ourselves.
+            int kb = insets.getInsets(WindowInsets.Type.ime()).bottom;
+            view.setPadding(i.left, i.top, i.right, Math.max(i.bottom, kb));
             return WindowInsets.CONSUMED;
         });
         getWindow().getDecorView().setBackgroundColor(BG);

@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.5.2';
+const APP_VERSION = '0.5.3';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -55,7 +55,7 @@ const I = (n, c = '') => `<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="
 /* ---------------- Android shell, sharing ---------------- */
 const SITE_URL = 'https://himanshusurya.github.io/family-gym/';
 const APK_URL = 'https://github.com/himanshusurya/family-gym/releases/latest/download/family-gym.apk';
-let LATEST_APK = '1.2.0';
+let LATEST_APK = '1.2.1';
 const SHELL = (navigator.userAgent.match(/FamilyGymAndroid\/([\d.]+)/) || [])[1] || null;
 const verLt = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); return false; };
 const shellOld = () => !!SHELL && verLt(SHELL, LATEST_APK);
@@ -941,6 +941,17 @@ async function boot() {
   const start = norm(location.hash);
   history.replaceState({ i: 0 }, '', HOME); stackD = [0];
   if (depth(start) > 0) { history.pushState({ i: 1 }, '', start); stackD.push(depth(start)); }
+  // Keep the field being typed in visible above the on-screen keyboard; hide the tab bar meanwhile.
+  const isField = (el) => !!el?.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select');
+  // Works even when the keyboard overlays the page (APK 1.2.0 and older): park the field in the top quarter.
+  const reveal = () => {
+    const el = document.activeElement; if (!isField(el)) return;
+    const vh = window.visualViewport?.height || innerHeight, r = el.getBoundingClientRect();
+    if (r.top < 70 || r.bottom > vh * 0.45) window.scrollBy({ top: r.top - vh * 0.25, behavior: 'smooth' });
+  };
+  document.addEventListener('focusin', (e) => { if (!isField(e.target)) return; document.body.classList.add('typing'); setTimeout(reveal, 300); });
+  document.addEventListener('focusout', () => setTimeout(() => { if (!isField(document.activeElement)) document.body.classList.remove('typing'); }, 150));
+  (window.visualViewport || window).addEventListener('resize', () => setTimeout(reveal, 60));
   window.addEventListener('online', () => Sync.run());
   window.addEventListener('offline', paintSync);
   document.addEventListener('visibilitychange', () => {

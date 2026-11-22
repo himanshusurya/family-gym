@@ -209,3 +209,7 @@ nav a.on { color: var(--fg); } nav a.on span { background: #34d39926; color: var
 .tline em { font-style: normal; color: var(--mut); font-weight: 600; display: inline-flex; align-items: center; gap: .15rem; } .tline em .ic { color: #fb923c; }
 .card.hl { border-color: #2f6b55; background: linear-gradient(160deg, #10372a, var(--card) 60%); }
 nav a.dot::after { content: ''; position: absolute; top: .35rem; right: calc(50% - 1.3rem); width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 2px #0e1117; }
+
+/* typing: room to lift the focused field above the keyboard; tab bar + timer out of the way */
+body.typing nav, body.typing .timer { display: none; }
+body.typing main { padding-bottom: 60vh; }
