@@ -1,7 +1,7 @@
 {
   "id": "himanshu",
   "title": "Himanshu: spine-safe Upper/Lower v5 (5 days, Mon–Fri)",
-  "version": "5.1",
+  "version": "5.2",
   "updated": "2026-11-22",
   "weekly": {
     "mon": "UA",
@@ -40,7 +40,8 @@
   "progression": [
     "Week 1 of v5 is a re-entry week: 2 sets per exercise, about 10% lighter, 3 reps in reserve.",
     "Then double progression: add reps each week; when all sets hit the top of the range, add the smallest load.",
-    "1–2 reps in reserve on compounds, 0–1 on isolations. Never grind under spinal load.",
+    "Effort: compounds 1–2 reps in reserve; isolations (laterals, curls, extensions, leg curl, calves, flyes) to true failure on the last set. Never grind under spinal load.",
+    "Every rep: 2–3 s lowering, full stretch at the bottom, no bouncing.",
     "Rest 2–3 min on compounds, 60–90 s on isolations. Supersets marked \"SS\" save time.",
     "Deload (half the sets) every 6th week, or after any gap of 7+ days."
   ],
@@ -73,7 +74,7 @@
           "ex": "cable-lateral-raise",
           "sets": 4,
           "reps": "12-20",
-          "note": "★",
+          "note": "★ Cable behind the body at hip height. Last set: add half-reps in the bottom range",
           "rest": 60
         },
         {
@@ -84,16 +85,16 @@
           "rest": 120
         },
         {
-          "ex": "rope-pushdown",
+          "ex": "overhead-cable-ext",
           "sets": 3,
           "reps": "10-15",
-          "note": "SS with overhead extension",
-          "rest": 60
+          "rest": 60,
+          "note": "SS with pushdown. Main triceps lift: deep stretch overhead"
         },
         {
-          "ex": "overhead-cable-ext",
+          "ex": "rope-pushdown",
           "sets": 2,
-          "reps": "12-15",
+          "reps": "10-15",
           "rest": 60
         }
       ]
@@ -120,7 +121,7 @@
           "ex": "leg-extension",
           "sets": 3,
           "reps": "12-15",
-          "note": "★",
+          "note": "★ Lean the backrest back if it adjusts (more rectus femoris)",
           "rest": 75
         },
         {
@@ -134,7 +135,8 @@
           "ex": "calf-seated",
           "sets": 4,
           "reps": "12-15",
-          "rest": 60
+          "rest": 60,
+          "note": "Pause 2 s at the bottom stretch"
         },
         {
           "ex": "mcgill-curl-up",
@@ -172,7 +174,7 @@
           "ex": "lat-pulldown",
           "sets": 4,
           "reps": "8-12",
-          "note": "★ Wide grip for V-taper width",
+          "note": "★ Wide grip. Let the shoulders rise fully at the top for the stretch",
           "rest": 150
         },
         {
@@ -235,11 +237,14 @@
           "rest": 150
         },
         {
-          "ex": "lying-leg-curl",
+          "ex": "seated-leg-curl",
           "sets": 4,
           "reps": "10-12",
-          "note": "★",
-          "rest": 75
+          "note": "★ Seated beats lying for growth (hamstrings stretched)",
+          "rest": 75,
+          "alt": [
+            "lying-leg-curl"
+          ]
         },
         {
           "ex": "hack-squat",
@@ -275,7 +280,7 @@
           "ex": "calf-standing",
           "sets": 4,
           "reps": "12-15",
-          "note": "Supported",
+          "note": "Supported. Pause 2 s at the bottom stretch",
           "rest": 60
         },
         {
@@ -312,7 +317,7 @@
           "ex": "cable-lateral-raise",
           "sets": 4,
           "reps": "15-20",
-          "note": "★",
+          "note": "★ Last set: add half-reps in the bottom range",
           "rest": 60
         },
         {
