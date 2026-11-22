@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.5.1';
+const APP_VERSION = '0.5.2';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -322,24 +322,28 @@ const Timer = {
   end: 0, iv: 0,
   start(sec) {
     if (!sec) return;
-    this.end = Date.now() + sec * 1000;
+    this.end = Date.now() + sec * 1000; this.total = sec;
     clearInterval(this.iv);
-    $('#timer').hidden = false;
+    $('#timer').hidden = false; $('#timer').className = 'timer';
     this.tick();
     this.iv = setInterval(() => this.tick(), 250);
   },
   tick() {
     const left = Math.max(0, Math.ceil((this.end - Date.now()) / 1000));
+    const el = $('#timer');
     $('#timer-t').textContent = `${Math.floor(left / 60)}:${pad(left % 60)}`;
+    el.style.setProperty('--p', Math.min(1, left / (this.total || 1)));
+    el.classList.toggle('urgent', left > 0 && left <= 10);
     if (left === 0) {
       clearInterval(this.iv);
+      el.className = 'timer go';
       $('#timer-t').textContent = 'Go!';
       navigator.vibrate?.([300, 150, 300]);
       beep();
       setTimeout(() => this.stop(), 4000);
     }
   },
-  add(s) { this.end += s * 1000; this.tick(); },
+  add(s) { this.end += s * 1000; this.total = Math.max(this.total, Math.ceil((this.end - Date.now()) / 1000)); this.tick(); },
   stop() { clearInterval(this.iv); $('#timer').hidden = true; },
 };
 function beep() {
@@ -661,7 +665,7 @@ function progressSummary(pid) {
 
 function viewHistory(pid) {
   const p = profile(pid); if (!p) return notFound();
-  setTitle(`${p.name} · Progress`, HOME); nav(pid, 'history');
+  setTitle(`${p.name} · Progress`); nav(pid, 'history');
   const mine = LOGS.filter((l) => live(l) && l.profile === pid);
   const days = [...new Set(mine.map((l) => l.day))].sort().reverse();
   const exs = [...new Set(mine.map((l) => l.ex))];
@@ -693,7 +697,7 @@ function viewHistoryEx(pid, ex) {
 
 function viewPlan(pid) {
   const p = profile(pid); const plan = S.plans[pid]; if (!plan) return notFound();
-  setTitle(`${p.name} · Plan`, HOME); nav(pid, 'plan');
+  setTitle(`${p.name} · Plan`); nav(pid, 'plan');
   app().innerHTML = `
     <div class="card"><b>${esc(plan.title)}</b><br><small class="muted">Plan v${esc(plan.version)} · updated ${esc(plan.updated || '')}</small></div>
     <details class="card" open><summary>${I('shield')} Rules</summary><ul>${(plan.rules || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
@@ -705,7 +709,7 @@ function viewPlan(pid) {
 }
 
 function viewSettings(pid) {
-  setTitle('Settings', HOME); nav(pid, 'settings');
+  setTitle('Settings'); nav(pid, 'settings');
   const last = LS.get('lastSync', 0);
   const me = profile(pid);
   app().innerHTML = `
@@ -873,7 +877,7 @@ function weekDots(pid, st) {
 
 function viewBoard() {
   const pid = ME();
-  setTitle('Leaderboard', HOME); nav(pid, 'board');
+  setTitle('Leaderboard'); nav(pid, 'board');
   const tab = LS.get('boardTab', 'week');
   const rows = ranking(tab);
   const note = !CLOUD ? '<p class="muted small center">Demo mode: only workouts saved on this phone are counted.</p>' : '';

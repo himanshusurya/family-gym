@@ -1,1 +1,1 @@
-{ "web": "0.5.1", "apk": "1.2.0", "notes": "Your own PIN sign-in. Home is your Today. Default 12 reps. Themed delete prompts. Board shows everyone's progress. Android app 1.2.0: press back twice to exit." }
+{"web":"0.5.2","apk":"1.2.0","notes":"Brighter rest timer: amber with a progress bar, red for the last 10 s, green on Go. No back arrow on the main tabs."}

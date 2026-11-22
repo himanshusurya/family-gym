@@ -141,7 +141,16 @@ div.brow { cursor: default; }
 #addset { width: 100%; }
 .pager { display: flex; justify-content: space-between; gap: .6rem; margin: 1rem 0; } .pager .btn { flex: 1; }
 
-.timer { position: fixed; left: .8rem; right: .8rem; bottom: calc(4.9rem + env(safe-area-inset-bottom)); z-index: 6; display: flex; align-items: center; gap: .6rem; background: linear-gradient(100deg, #0f5c40, #0d4a3a); border: 1px solid #2f8f68; border-radius: 18px; padding: .6rem .9rem; box-shadow: 0 10px 30px #000a; max-width: 620px; margin: 0 auto; }
+.timer { --p: 1; --tc: #f59e0b; position: fixed; left: .8rem; right: .8rem; bottom: calc(4.9rem + env(safe-area-inset-bottom)); z-index: 6; display: flex; align-items: center; gap: .6rem; overflow: hidden; background: linear-gradient(100deg, #3b2606, #2a1b07); border: 1.5px solid var(--tc); border-radius: 18px; padding: .6rem .9rem .75rem; box-shadow: 0 10px 30px #000a, 0 0 22px color-mix(in srgb, var(--tc) 35%, transparent); max-width: 620px; margin: 0 auto; }
+.timer span { color: var(--tc); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: .8rem; }
+.timer b { color: #fff7e6; }
+.timer::after { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: calc(var(--p) * 100%); background: var(--tc); transition: width .25s linear; }
+.timer.urgent { --tc: #ef4444; background: linear-gradient(100deg, #4a1111, #2e0b0b); animation: tpulse 1s ease-in-out infinite; }
+.timer.go { --tc: #22c55e; background: linear-gradient(100deg, #0f6b45, #0b5235); animation: tgo .5s ease-out 3; }
+.timer.go b { color: #fff; }
+@keyframes tpulse { 50% { box-shadow: 0 10px 30px #000a, 0 0 34px #ef4444aa; } }
+@keyframes tgo { 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .timer.urgent, .timer.go { animation: none; } }
 .timer b { flex: 1; font-size: 1.7rem; font-variant-numeric: tabular-nums; } .timer button { padding: .45rem .7rem; background: #ffffff14; border-color: #fff3; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(9.6rem + env(safe-area-inset-bottom)); z-index: 7; background: #f1f5f9; color: #0b0d12; font-weight: 600; padding: .6rem 1.1rem; border-radius: 99px; font-size: .88rem; max-width: 90%; box-shadow: 0 8px 24px #0008; }
 [hidden] { display: none !important; }
