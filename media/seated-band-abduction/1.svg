@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+<rect width="400" height="300" fill="#ffffff"/>
+<g transform="translate(40,58) scale(0.8)">
+<line x1="-40" y1="266" x2="440" y2="266" stroke="#cfd5de" stroke-width="3"/>
+<rect x="130" y="170" width="140" height="18" rx="4" fill="#8b95a5"/><rect x="140" y="188" width="10" height="76" fill="#8b95a5"/><rect x="250" y="188" width="10" height="76" fill="#8b95a5"/><polyline points="200,84 200,168" fill="none" stroke="#1d3f8f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="184,92 160,130 150,168" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="216,92 240,130 250,168" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="190,168 150,196 160.0,262 145.0,262" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="210,168 250,196 240.0,262 255.0,262" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="200" cy="62" r="17" fill="#f1c6a0"/>
+<path d="M183,60 A17,17 0 0 1 217,60 L203.4,56 Z" fill="#3b2a20"/><line x1="150" y1="188" x2="250" y2="188" stroke="#e53e3e" stroke-width="7" stroke-linecap="round"/>
+</g>
+<text x="16" y="28" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="17" font-weight="700" fill="#1d3f8f">Push knees apart</text>
+<text x="16" y="48" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="13" fill="#5b6575">Hold 1 s, return slowly. Back stays tall</text>
+</svg>

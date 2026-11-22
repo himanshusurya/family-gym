@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+<rect width="400" height="300" fill="#ffffff"/>
+<g transform="translate(40,58) scale(0.8)">
+<line x1="-40" y1="266" x2="440" y2="266" stroke="#cfd5de" stroke-width="3"/>
+<rect x="30" y="40" width="30" height="226" rx="4" fill="#8b95a5"/><circle cx="60" cy="248" r="7" fill="#555"/><line x1="60" y1="248" x2="212" y2="262" stroke="#444" stroke-width="2.5"/><polyline points="200,84 200,160" fill="none" stroke="#1d3f8f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="184,92 130,118 64,120" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="216,92 230,130 234,168" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="192,160 190,212 188,262 172,262" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="208,160 210,212 212,262 228,264" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="200" cy="62" r="17" fill="#f1c6a0"/>
+<path d="M183,60 A17,17 0 0 1 217,60 L203.4,56 Z" fill="#3b2a20"/>
+</g>
+<text x="16" y="28" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="17" font-weight="700" fill="#1d3f8f">Start</text>
+<text x="16" y="48" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="13" fill="#5b6575">Strap on the outside ankle, hold the machine, stand tall</text>
+</svg>

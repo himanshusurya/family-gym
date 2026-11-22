@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+<rect width="400" height="300" fill="#ffffff"/>
+<g transform="translate(40,58) scale(0.8)">
+<line x1="-40" y1="266" x2="440" y2="266" stroke="#cfd5de" stroke-width="3"/>
+<rect x="60" y="262" width="280" height="7" rx="3" fill="#9fd8bd"/><polyline points="255,170 255,215 258,262" fill="none" stroke="#9db7ec" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="150,172 150,218 152,262 100,262" fill="none" stroke="#9db7ec" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="255,170 150,172" fill="none" stroke="#1d3f8f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="255,170 252,215 252,262" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="150,172 148,218 148,262 98,262" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="290" cy="152" r="17" fill="#f1c6a0"/>
+<path d="M273,150 A17,17 0 0 1 307,150 L293.4,146 Z" fill="#3b2a20"/>
+</g>
+<text x="16" y="28" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="17" font-weight="700" fill="#1d3f8f">Start</text>
+<text x="16" y="48" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="13" fill="#5b6575">Hands under shoulders, knees under hips, back flat</text>
+</svg>

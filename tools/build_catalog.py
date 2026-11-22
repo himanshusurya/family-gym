@@ -79,6 +79,12 @@ X = {
     'Keep the body upright and the toes forward.',
     'Lift the leg out to the side slowly, about 30–40°.',
     'Lower slowly. Do all reps, then switch legs. Seated banded abduction is the alternative.']),
+ 'seated-band-abduction': ('Seated Banded Abduction', None, 'Glute medius / minimus', 'Mini band + bench',
+   ['Leaning back to cheat', 'Letting the knees snap back together', 'Band too low (on the shins)'],
+   ['Sit tall on the edge of a bench with a mini band just above the knees, feet hip-width.',
+    'Hands on the bench beside the hips.',
+    'Push the knees out against the band, hold 1 s.',
+    'Return slowly with control.']),
  'glute-bridge': ('Glute Bridge', 'Butt_Lift_Bridge', 'Glutes, hamstrings', 'Mat',
    ['Arching the lower back at the top instead of squeezing the glutes',
     'Pushing through the toes', 'Knees falling apart'], None),
@@ -138,6 +144,8 @@ X = {
    ['Arching the back off the pad', 'Shoulders shrugging', 'Bouncing at the bottom'], None),
  'pec-deck': ('Pec-Deck', 'Butterfly', 'Chest', 'Machine',
    ['Over-stretching the shoulders at the back', 'Bending the elbows into a press', 'Using momentum'], None),
+ 'cable-fly': ('Cable Fly', 'Cable_Crossover', 'Chest', 'Cable',
+   ['Turning it into a press (elbows bending more and more)', 'Leaning far forward', 'Over-stretching the shoulders'], None),
  'incline-pushup': ('Incline Push-up', 'Incline_Push-Up', 'Chest, triceps', 'Bench / wall',
    ['Hips sagging', 'Elbows flared straight out', 'Half reps'], None),
  'incline-db-press': ('Incline Dumbbell Press', 'Incline_Dumbbell_Press', 'Upper chest', 'Dumbbells + bench',
@@ -169,6 +177,10 @@ X = {
    ['Lie face-down on an incline bench, a dumbbell in each hand, arms hanging.',
     'Shrug the shoulders straight up towards the ears.',
     'Hold 1 s, then lower slowly.']),
+ 'cable-shrug': ('Cable Shrug', 'Cable_Shrugs', 'Upper traps', 'Cable',
+   ['Rolling the shoulders', 'Bending the elbows', 'Leaning back'], None),
+ 'cable-rear-delt-fly': ('Cable Rear-Delt Fly', 'Cable_Rear_Delt_Fly', 'Rear shoulders', 'Cable',
+   ['Using momentum', 'Shrugging', 'Pulling with bent arms (turns into a row)'], None),
  # ---------------- back ----------------
  'lat-pulldown': ('Lat Pulldown', 'Wide-Grip_Lat_Pulldown', 'Lats (back width), biceps', 'Machine',
    ['Pulling behind the neck: always to the upper chest', 'Leaning far back', 'Using the arms instead of the back'], None),
@@ -214,6 +226,8 @@ X = {
    ['Leaning back', 'Elbows moving forward', 'Half reps'], None),
  'hammer-curl': ('Hammer Curl', 'Hammer_Curls', 'Brachialis, forearms', 'Dumbbells',
    ['Swinging', 'Wrists bending', 'Elbows drifting'], None),
+ 'cable-hammer-curl': ('Rope Hammer Curl', 'Cable_Hammer_Curls_-_Rope_Attachment', 'Brachialis, forearms', 'Cable (rope)',
+   ['Leaning back', 'Elbows drifting forward', 'Half reps'], None),
  'incline-db-curl': ('Incline Dumbbell Curl', 'Incline_Dumbbell_Curl', 'Biceps (long head)', 'Dumbbells + incline bench',
    ['Shoulders coming forward', 'Too heavy', 'Not lowering fully'], None),
  'farmers-carry': ("Farmer's Carry", 'Farmers_Walk', 'Grip, traps, core, legs', 'Dumbbells',
@@ -237,6 +251,9 @@ def main():
         if fid and not e:
             sys.exit(f'{xid}: free-exercise-db id {fid} not found')
         imgs = []
+        svg_dir = os.path.join(ROOT, 'media', xid)
+        if not e and os.path.exists(os.path.join(svg_dir, '0.svg')):
+            imgs = [f'media/{xid}/{i}.svg' for i in (0, 1) if os.path.exists(os.path.join(svg_dir, f'{i}.svg'))]
         if e:
             d = os.path.join(ROOT, 'media', xid)
             os.makedirs(d, exist_ok=True)

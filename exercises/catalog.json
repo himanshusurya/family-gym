@@ -258,7 +258,10 @@
    "name": "Cable Standing Hip Abduction",
    "muscles": "Glute medius / minimus",
    "equipment": "Cable (ankle strap) or band",
-   "img": [],
+   "img": [
+    "media/cable-hip-abduction/0.svg",
+    "media/cable-hip-abduction/1.svg"
+   ],
    "steps": [
     "Attach the ankle strap to the outside leg and stand side-on to the cable, holding the machine.",
     "Keep the body upright and the toes forward.",
@@ -269,6 +272,28 @@
     "Leaning the torso sideways",
     "Swinging the leg",
     "Turning the toes up: keep them pointing forward"
+   ],
+   "source": null
+  },
+  {
+   "id": "seated-band-abduction",
+   "name": "Seated Banded Abduction",
+   "muscles": "Glute medius / minimus",
+   "equipment": "Mini band + bench",
+   "img": [
+    "media/seated-band-abduction/0.svg",
+    "media/seated-band-abduction/1.svg"
+   ],
+   "steps": [
+    "Sit tall on the edge of a bench with a mini band just above the knees, feet hip-width.",
+    "Hands on the bench beside the hips.",
+    "Push the knees out against the band, hold 1 s.",
+    "Return slowly with control."
+   ],
+   "mistakes": [
+    "Leaning back to cheat",
+    "Letting the knees snap back together",
+    "Band too low (on the shins)"
    ],
    "source": null
   },
@@ -454,7 +479,10 @@
    "name": "Bird-Dog",
    "muscles": "Core, back stability",
    "equipment": "Mat",
-   "img": [],
+   "img": [
+    "media/bird-dog/0.svg",
+    "media/bird-dog/1.svg"
+   ],
    "steps": [
     "Kneel on all fours: hands under the shoulders, knees under the hips.",
     "Keep the back flat like a table.",
@@ -511,7 +539,10 @@
    "name": "McGill Curl-up",
    "muscles": "Core (anti-flexion)",
    "equipment": "Mat",
-   "img": [],
+   "img": [
+    "media/mcgill-curl-up/0.svg",
+    "media/mcgill-curl-up/1.svg"
+   ],
    "steps": [
     "Lie on the back, one knee bent, one leg straight. Hands under the lower back to keep its natural curve.",
     "Brace the abs lightly.",
@@ -530,7 +561,10 @@
    "name": "Single-leg Stand",
    "muscles": "Balance, ankles, hips",
    "equipment": "Near a rail",
-   "img": [],
+   "img": [
+    "media/single-leg-stand/0.svg",
+    "media/single-leg-stand/1.svg"
+   ],
    "steps": [
     "Stand next to a rail with one hand on it.",
     "Lift one foot slightly off the floor and hold, looking ahead.",
@@ -549,7 +583,10 @@
    "name": "Heel-to-toe Walk",
    "muscles": "Balance",
    "equipment": "Along a wall / rail",
-   "img": [],
+   "img": [
+    "media/tandem-walk/0.svg",
+    "media/tandem-walk/1.svg"
+   ],
    "steps": [
     "Stand next to a wall or rail.",
     "Walk forward placing the heel of one foot directly in front of the toes of the other.",
@@ -627,6 +664,29 @@
     "Using momentum"
    ],
    "source": "Butterfly"
+  },
+  {
+   "id": "cable-fly",
+   "name": "Cable Fly",
+   "muscles": "Chest",
+   "equipment": "Cable",
+   "img": [
+    "media/cable-fly/0.jpg",
+    "media/cable-fly/1.jpg"
+   ],
+   "steps": [
+    "To get yourself into the starting position, place the pulleys on a high position (above your head), select the resistance to be used and hold the pulleys in each hand.",
+    "Step forward in front of an imaginary straight line between both pulleys while pulling your arms together in front of you. Your torso should have a small forward bend from the waist. This will be your starting position.",
+    "With a slight bend on your elbows in order to prevent stress at the biceps tendon, extend your arms to the side (straight out at both sides) in a wide arc until you feel a stretch on your chest. Breathe in as you perform this portion of the movement. Tip: Keep in mind that throughout the movement, the arms and torso should remain stationary; the movement should only occur at the shoulder joint.",
+    "Return your arms back to the starting position as you breathe out. Make sure to use the same arc of motion used to lower the weights.",
+    "Hold for a second at the starting position and repeat the movement for the prescribed amount of repetitions."
+   ],
+   "mistakes": [
+    "Turning it into a press (elbows bending more and more)",
+    "Leaning far forward",
+    "Over-stretching the shoulders"
+   ],
+   "source": "Cable_Crossover"
   },
   {
    "id": "incline-pushup",
@@ -895,6 +955,51 @@
     "Too fast"
    ],
    "source": "Dumbbell_Shrug"
+  },
+  {
+   "id": "cable-shrug",
+   "name": "Cable Shrug",
+   "muscles": "Upper traps",
+   "equipment": "Cable",
+   "img": [
+    "media/cable-shrug/0.jpg",
+    "media/cable-shrug/1.jpg"
+   ],
+   "steps": [
+    "Grasp a cable bar attachment that is attached to a low pulley with a shoulder width or slightly wider overhand (palms facing down) grip.",
+    "Stand erect close to the pulley with your arms extended in front of you holding the bar. This will be your starting position.",
+    "Lift the bar by elevating the shoulders as high as possible as you exhale. Hold the contraction at the top for a second. Tip: The arms should remain extended at all times. Refrain from using the biceps to help lift the bar. Only the shoulders should be moving up and down.",
+    "Lower the bar back to the original position.",
+    "Repeat for the recommended amount of repetitions."
+   ],
+   "mistakes": [
+    "Rolling the shoulders",
+    "Bending the elbows",
+    "Leaning back"
+   ],
+   "source": "Cable_Shrugs"
+  },
+  {
+   "id": "cable-rear-delt-fly",
+   "name": "Cable Rear-Delt Fly",
+   "muscles": "Rear shoulders",
+   "equipment": "Cable",
+   "img": [
+    "media/cable-rear-delt-fly/0.jpg",
+    "media/cable-rear-delt-fly/1.jpg"
+   ],
+   "steps": [
+    "Adjust the pulleys to the appropriate height and adjust the weight. The pulleys should be above your head.",
+    "Grab the left pulley with your right hand and the right pulley with your left hand, crossing them in front of you. This will be your starting position.",
+    "Initiate the movement by moving your arms back and outward, keeping your arms straight as you execute the movement.",
+    "Pause at the end of the motion before returning the handles to the start position."
+   ],
+   "mistakes": [
+    "Using momentum",
+    "Shrugging",
+    "Pulling with bent arms (turns into a row)"
+   ],
+   "source": "Cable_Rear_Delt_Fly"
   },
   {
    "id": "lat-pulldown",
@@ -1229,6 +1334,30 @@
     "Elbows drifting"
    ],
    "source": "Hammer_Curls"
+  },
+  {
+   "id": "cable-hammer-curl",
+   "name": "Rope Hammer Curl",
+   "muscles": "Brachialis, forearms",
+   "equipment": "Cable (rope)",
+   "img": [
+    "media/cable-hammer-curl/0.jpg",
+    "media/cable-hammer-curl/1.jpg"
+   ],
+   "steps": [
+    "Attach a rope attachment to a low pulley and stand facing the machine about 12 inches away from it.",
+    "Grasp the rope with a neutral (palms-in) grip and stand straight up keeping the natural arch of the back and your torso stationary.",
+    "Put your elbows in by your side and keep them there stationary during the entire movement. Tip: Only the forearms should move; not your upper arms. This will be your starting position.",
+    "Using your biceps, pull your arms up as you exhale until your biceps touch your forearms. Tip: Remember to keep the elbows in and your upper arms stationary.",
+    "After a 1 second contraction where you squeeze your biceps, slowly start to bring the weight back to the original position.",
+    "Repeat for the recommended amount of repetitions."
+   ],
+   "mistakes": [
+    "Leaning back",
+    "Elbows drifting forward",
+    "Half reps"
+   ],
+   "source": "Cable_Hammer_Curls_-_Rope_Attachment"
   },
   {
    "id": "incline-db-curl",

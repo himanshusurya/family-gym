@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+<rect width="400" height="300" fill="#ffffff"/>
+<g transform="translate(40,58) scale(0.8)">
+<line x1="-40" y1="266" x2="440" y2="266" stroke="#cfd5de" stroke-width="3"/>
+<rect x="50" y="262" width="300" height="7" rx="3" fill="#9fd8bd"/><polyline points="212,246 285,250 335,252" fill="none" stroke="#9db7ec" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="112,234.4 212,246" fill="none" stroke="#1d3f8f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="112,234.4 160,252 196,250" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="212,246 255,200 292,252 310,260" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="78" cy="220" r="17" fill="#f1c6a0"/>
+<path d="M61,218 A17,17 0 0 1 95,218 L74.6,214 Z" fill="#3b2a20"/><defs><marker id="a" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e0822b"/></marker></defs><line x1="60" y1="230" x2="60" y2="205" stroke="#e0822b" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#a)"/>
+</g>
+<text x="16" y="28" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="17" font-weight="700" fill="#1d3f8f">Lift &amp; hold 8–10 s</text>
+<text x="16" y="48" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="13" fill="#5b6575">Head + shoulders up a few cm. Keep the low-back arch</text>
+</svg>

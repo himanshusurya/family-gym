@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+<rect width="400" height="300" fill="#ffffff"/>
+<g transform="translate(40,58) scale(0.8)">
+<line x1="-40" y1="266" x2="440" y2="266" stroke="#cfd5de" stroke-width="3"/>
+<line x1="20" y1="268" x2="380" y2="268" stroke="#e0822b" stroke-width="3" stroke-dasharray="10 8"/><polyline points="190,160 184,212 172,262 196,262" fill="none" stroke="#9db7ec" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="194,96 160,118 130,124" fill="none" stroke="#9db7ec" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="194,86 190,160" fill="none" stroke="#1d3f8f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="190,160 198,212 200,262 224,262" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="194,96 226,118 256,124" fill="none" stroke="#2f6fe0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="198" cy="62" r="17" fill="#f1c6a0"/>
+<path d="M181,60 A17,17 0 0 1 215,60 L194.6,56 Z" fill="#3b2a20"/>
+</g>
+<text x="16" y="28" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="17" font-weight="700" fill="#1d3f8f">Step</text>
+<text x="16" y="48" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="13" fill="#5b6575">Heel of the front foot touches the toes of the back foot</text>
+</svg>
