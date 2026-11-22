@@ -65,7 +65,7 @@ ul.bad li::marker { content: '✕  '; color: var(--bad); }
 button.pcard { width: 100%; text-align: left; color: inherit; font: inherit; font-weight: 400; justify-content: flex-start; margin-bottom: .6rem; }
 .pcard.sel { border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, var(--s1)); }
 .pcard .go { margin-left: auto; }
-.pinbox { margin-top: .4rem; } .pinbox input { margin: .4rem 0; font-size: 1.3rem; letter-spacing: .3em; text-align: center; }
+.pinbox { margin-top: .4rem; } .pinbox input { margin: .4rem 0; font-size: 1.3rem; letter-spacing: .3em; text-align: center; } .pinbox input::placeholder { letter-spacing: normal; font-size: 1rem; }
 .pinchange { margin-top: .9rem; } .pinchange summary { cursor: pointer; color: var(--mut); } .pinchange input { margin: .4rem 0; }
 button.danger { background: var(--bad); color: #2a0707; font-weight: 700; }
 .brow .you { display: inline-block; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-pri); background: var(--pri); border-radius: 99px; padding: .05rem .4rem; vertical-align: .15em; }
