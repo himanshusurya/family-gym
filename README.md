@@ -9,6 +9,15 @@ Week and month use *consistency* (planned workout days done), so 5-day and 6-day
 
 **Live:** https://himanshusurya.github.io/family-gym/
 
+## Android app
+
+Download the APK from [Releases](https://github.com/himanshusurya/family-gym/releases/latest) and install it (allow "Install unknown apps" once).
+The APK is a thin native shell (`android/`) around the live site, so **plan and app fixes still arrive without reinstalling**. You only need a new APK when the shell itself changes.
+It needs internet once on first launch; after that it works offline.
+
+Build: `cd android; .\gradlew.bat assembleRelease`. Signing needs `android/key.properties` (not committed) pointing at `family-gym-release.jks`.
+Always sign with that same keystore, or installed phones won't accept the update. Bump `versionCode`/`versionName` in `android/app/build.gradle.kts` on every release.
+
 ## Change a workout without updating the app
 
 All workouts are plain JSON in [`plans/`](plans). To change one:

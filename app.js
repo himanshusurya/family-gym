@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.2.0';
+const APP_VERSION = '0.2.1';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -461,8 +461,10 @@ function viewSettings(pid) {
       .concat(LOGS.filter(live).sort((a, b) => (a.day + a.profile + a.ex + a.set_no).localeCompare(b.day + b.profile + b.ex + b.set_no))
         .map((l) => [l.day, l.profile, l.session, exInfo(l.ex).name, l.set_no, l.kg ?? '', l.reps]));
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const name = `family-gym-${dayStr()}.csv`;
+    if (window.FamilyGymAndroid) { window.FamilyGymAndroid.saveFile(name, 'text/csv', csv); return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `family-gym-${dayStr()}.csv`; a.click();
+    a.download = name; a.click();
   };
 }
 

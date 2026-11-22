@@ -3,3 +3,10 @@ _site/
 node_modules/
 test/shots/
 *.dpapi
+android/key.properties
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+*.jks
+*.apk
