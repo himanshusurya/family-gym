@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.4.1';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -344,20 +344,32 @@ const setTitle = (t, back) => {
 };
 
 /* ---------------- navigation: back always goes UP one screen ----------------
-   The history stack is kept at [home] or [home, current]: moving between screens replaces the
-   top entry instead of stacking. When back lands on home from a deeper screen, we push that
-   screen's parent, so Android/browser back steps exercise → day → profile → home → exit. */
+   The history stack mirrors the screen hierarchy: home(0) → profile/day(1) → tab or exercise(2)
+   → exercise progress(3). Going deeper pushes one entry, moving sideways (days, tabs, Next/Prev)
+   replaces the top entry, and going up jumps back to the entry at that level. Entries are only
+   added from taps, because Chrome/WebView back skips entries pushed without a user gesture. */
 const HOME = '#/';
 const norm = (h) => (!h || h === '#' || h === '#/' ? HOME : h);
-let UP = null, cur = null, goingHome = false;
+const depth = (h) => {
+  const p = norm(h).replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (!p.length) return 0;
+  if (p[0] !== 'p' || !p[2] || p[2] === 'd') return 1;
+  return p[2] === 'history' && p[3] ? 3 : 2;
+};
+let UP = null, cur = null, pending = null;
+let stackD = [0]; // depth of each history entry we own, indexed by history.state.i
+const at = () => history.state?.i ?? 0;
 function go(h) {
   h = norm(h); const c = norm(location.hash);
   if (h === c) return route();
-  if (h === HOME) {
-    if (history.state?.fg) { goingHome = true; history.back(); } else { history.replaceState({}, '', HOME); route(); }
-    return;
+  const i = at(), dt = depth(h), dc = stackD[i] ?? depth(c);
+  if (dt > dc) { history.pushState({ i: i + 1 }, '', h); stackD = stackD.slice(0, i + 1).concat(dt); }
+  else if (dt === dc || i === 0) { history.replaceState({ i }, '', h); stackD[i] = dt; }
+  else {
+    let j = i; while (j > 0 && stackD[j] > dt) j--;
+    if (j < i) { pending = h; history.go(j - i); return; }
+    history.replaceState({ i }, '', h); stackD[i] = dt;
   }
-  history[c === HOME ? 'pushState' : 'replaceState']({ fg: 1 }, '', h);
   route();
 }
 document.addEventListener('click', (e) => {
@@ -366,10 +378,10 @@ document.addEventListener('click', (e) => {
   e.preventDefault(); go(a.getAttribute('href'));
 });
 window.addEventListener('popstate', () => {
-  // Only a real back step lands on our seeded home entry (state {}); typed/linked "#/" has state null.
-  const backToHome = norm(location.hash) === HOME && history.state && !history.state.fg;
-  if (backToHome && !goingHome && UP && norm(UP) !== HOME) history.pushState({ fg: 1 }, '', UP);
-  goingHome = false; route();
+  const i = at();
+  if (pending) { if (norm(location.hash) !== pending) history.replaceState({ i }, '', pending); pending = null; }
+  stackD = stackD.slice(0, i + 1); stackD[i] = depth(location.hash);
+  route();
 });
 window.addEventListener('hashchange', () => { if (norm(location.hash) !== cur) route(); });
 function toast(msg) {
@@ -813,11 +825,11 @@ async function boot() {
   $('#timer-add').onclick = () => Timer.add(30);
   try { await loadData(); }
   catch (e) { app().innerHTML = `<div class="card center"><p>Couldn't load the plans. Check the internet and try again.</p><button class="primary" onclick="location.reload()">Retry</button></div>`; return; }
-  // Seed the stack as [home, start] so back from the first screen goes home, then exits.
+  // Seed the stack as [home, start]; later entries are only added from taps (see go()).
   const saved = LS.get('profile', null);
   const start = location.hash ? norm(location.hash) : saved && profile(saved) ? `#/p/${saved}` : HOME;
-  history.replaceState({}, '', HOME);
-  if (start !== HOME) history.pushState({ fg: 1 }, '', start);
+  history.replaceState({ i: 0 }, '', HOME); stackD = [0];
+  if (start !== HOME) { history.pushState({ i: 1 }, '', start); stackD.push(depth(start)); }
   window.addEventListener('online', () => Sync.run());
   window.addEventListener('offline', paintSync);
   document.addEventListener('visibilitychange', () => {
