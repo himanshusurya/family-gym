@@ -14,8 +14,11 @@ Week and month use *consistency* (planned workout days done), so 5-day and 6-day
 ## Android app
 
 Download the latest APK: https://github.com/himanshusurya/family-gym/releases/latest/download/family-gym.apk and install it (allow "Install unknown apps" once).
-The APK is a thin native shell (`android/`) around the live site, so **plan and app fixes still arrive without reinstalling**. You only need a new APK when the shell itself changes. Shell 1.1.0 added the photo picker and native share; phones on an older shell see an update banner in the app.
- releasing, attach the APK twice: `family-gym-<version>.apk` and `family-gym.apk`. The stable name keeps the in-app `latest/download` link working.
+The APK is a thin native shell (`android/`) around the live site, so **plan and app fixes still arrive without reinstalling**. You only need a new APK when the shell itself changes. Shell 1.1.0 added the photo picker and native share.
+
+**In-app updates:** Settings → App updates reads [`version.json`](version.json) (`web` = current `APP_VERSION` in `app.js`, `apk` = latest Android shell, `notes`). If a newer web version is live it offers **Update now**; if the phone's Android shell is older than `apk` it offers the APK download. A dot on the Settings tab flags either. On every release, bump `version.json` together with `APP_VERSION` (CI rejects a mismatch) and set `apk` after publishing a new APK.
+
+When releasing an APK, attach it twice: `family-gym-<version>.apk` and `family-gym.apk`. The stable name keeps the in-app `latest/download` link working.
 It needs internet once on first launch; after that it works offline.
 
 Build: `cd android; .\gradlew.bat assembleRelease`. Signing needs `android/key.properties` (not committed) pointing at `family-gym-release.jks`.

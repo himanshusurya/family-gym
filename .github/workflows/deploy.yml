@@ -25,7 +25,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir _site
-          cp -r index.html app.js styles.css sw.js config.js manifest.webmanifest icons plans exercises media _site/
+          cp -r index.html app.js styles.css sw.js config.js manifest.webmanifest version.json icons plans exercises media _site/
       - uses: actions/upload-pages-artifact@v3
         with: { path: _site }
       - id: dep

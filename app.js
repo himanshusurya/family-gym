@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.3.0';
+const APP_VERSION = '0.4.0';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -55,10 +55,39 @@ const I = (n, c = '') => `<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="
 /* ---------------- Android shell, sharing ---------------- */
 const SITE_URL = 'https://himanshusurya.github.io/family-gym/';
 const APK_URL = 'https://github.com/himanshusurya/family-gym/releases/latest/download/family-gym.apk';
-const LATEST_APK = '1.1.0';
+let LATEST_APK = '1.1.0';
 const SHELL = (navigator.userAgent.match(/FamilyGymAndroid\/([\d.]+)/) || [])[1] || null;
 const verLt = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); return false; };
-const shellOld = !!SHELL && verLt(SHELL, LATEST_APK);
+const shellOld = () => !!SHELL && verLt(SHELL, LATEST_APK);
+
+/* ---------------- app updates: version.json says what's latest (web + Android) ---------------- */
+const Upd = { web: null, notes: '', checked: 0 };
+const webNew = () => !!Upd.web && verLt(APP_VERSION, Upd.web);
+const updAvail = () => webNew() || shellOld();
+async function checkUpdates() {
+  try {
+    const j = await (await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' })).json();
+    Upd.web = j.web; Upd.notes = j.notes || ''; Upd.checked = Date.now();
+    if (j.apk) LATEST_APK = j.apk;
+  } catch { Upd.checked = -1; }
+  paintUpdDot();
+}
+function paintUpdDot() { const a = document.querySelector('nav a[href$="/settings"]'); if (a) a.classList.toggle('dot', updAvail()); }
+async function applyWebUpdate() {
+  toast('Updating…');
+  try { await Promise.all(['./', 'index.html', 'app.js', 'styles.css', 'config.js', 'sw.js', 'manifest.webmanifest'].map((f) => fetch(f, { cache: 'reload' }))); } catch { /* offline */ }
+  try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch { /* no sw */ }
+  location.reload();
+}
+function updCard() {
+  const parts = [];
+  if (webNew()) parts.push(`<p><b>Version ${esc(Upd.web)} is ready.</b> ${esc(Upd.notes)}</p><button class="primary" id="updweb">${I('refresh')} Update now</button>`);
+  if (shellOld()) parts.push(`<p><b>Android app ${LATEST_APK} is available.</b> Download it, then install over this app. Your workouts stay.</p><a class="btn primary" href="${APK_URL}">${I('download')} Download ${LATEST_APK}</a>`);
+  if (!parts.length) parts.push(`<p class="muted">${Upd.checked > 0 ? 'You have the latest version.' : Upd.checked < 0 ? "Couldn't check (offline?)." : 'Checking…'}</p>`);
+  return `<div class="card ${updAvail() ? 'hl' : ''}"><h3>${I('download')} App updates</h3>
+    <p class="muted small">Installed: v${APP_VERSION}${SHELL ? ` · Android app ${SHELL}` : ''}</p>${parts.join('')}
+    <button class="ghost" id="updcheck">${I('refresh')} Check for updates</button></div>`;
+}
 
 async function share(text, title = 'Family Gym') {
   if (window.FamilyGymAndroid?.share) { window.FamilyGymAndroid.share(title, text); return; }
@@ -66,7 +95,6 @@ async function share(text, title = 'Family Gym') {
   try { await navigator.clipboard.writeText(text); toast('Copied. Paste it in WhatsApp'); } catch { prompt('Copy this message:', text); }
 }
 const inviteText = () => `Join our Family Gym 💪\n\nAndroid app: ${APK_URL}\nOr open in the browser: ${SITE_URL}\n\nFamily code: ask Himanshu.`;
-const updateBanner = () => (shellOld ? `<a class="banner" href="${APK_URL}">${I('download')}<div><b>App update ${LATEST_APK} available</b><small>Adds profile photos and sharing. Tap to download, then install.</small></div>${I('chev')}</a>` : '');
 
 /* ---------------- profile photos (synced via the small "avatar" table) ---------------- */
 const Avatars = {
@@ -86,7 +114,7 @@ async function squareJpeg(file, size) {
   } finally { URL.revokeObjectURL(url); }
 }
 function pickPhoto(pid) {
-  if (shellOld) { toast('Update the app first (banner on the home screen) to add photos'); return; }
+  if (shellOld()) { toast('Update the app first (Settings → App updates) to add photos'); return; }
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/*'; inp.hidden = true;
   document.body.appendChild(inp);
@@ -311,8 +339,39 @@ const app = () => $('#app');
 const setTitle = (t, back) => {
   $('#title').textContent = t;
   $('#back').hidden = !back;
-  $('#back').onclick = () => (back === true ? history.back() : (location.hash = back));
+  UP = back || null;
+  $('#back').onclick = () => go(UP);
 };
+
+/* ---------------- navigation: back always goes UP one screen ----------------
+   The history stack is kept at [home] or [home, current]: moving between screens replaces the
+   top entry instead of stacking. When back lands on home from a deeper screen, we push that
+   screen's parent, so Android/browser back steps exercise → day → profile → home → exit. */
+const HOME = '#/';
+const norm = (h) => (!h || h === '#' || h === '#/' ? HOME : h);
+let UP = null, cur = null, goingHome = false;
+function go(h) {
+  h = norm(h); const c = norm(location.hash);
+  if (h === c) return route();
+  if (h === HOME) {
+    if (history.state?.fg) { goingHome = true; history.back(); } else { history.replaceState({}, '', HOME); route(); }
+    return;
+  }
+  history[c === HOME ? 'pushState' : 'replaceState']({ fg: 1 }, '', h);
+  route();
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest?.('a[href^="#"]');
+  if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  e.preventDefault(); go(a.getAttribute('href'));
+});
+window.addEventListener('popstate', () => {
+  // Only a real back step lands on our seeded home entry (state {}); typed/linked "#/" has state null.
+  const backToHome = norm(location.hash) === HOME && history.state && !history.state.fg;
+  if (backToHome && !goingHome && UP && norm(UP) !== HOME) history.pushState({ fg: 1 }, '', UP);
+  goingHome = false; route();
+});
+window.addEventListener('hashchange', () => { if (norm(location.hash) !== cur) route(); });
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2500);
@@ -322,6 +381,7 @@ function nav(pid, active) {
   $('#nav').innerHTML = pid ? tabs.map(([k, l, i]) =>
     `<a href="#/p/${pid}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${I(i)}</span>${l}</a>`).join('') : '';
   $('#nav').hidden = !pid;
+  paintUpdDot();
 }
 const avatar = (p, size = '') => {
   const img = Avatars.get(p.id);
@@ -332,7 +392,7 @@ const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good 
 function viewHome() {
   setTitle('Family Gym'); nav(null);
   const ps = S.index.profiles;
-  app().innerHTML = `${updateBanner()}
+  app().innerHTML = `
     <section class="hello"><small>${greeting()} · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</small>
       <h2>Who's training today?</h2></section>
     <div class="profiles">${ps.map((p) => {
@@ -343,9 +403,7 @@ function viewHome() {
         ${st ? `<span class="pill ${st.cur ? 'hot' : ''}">${I('flame')}${st.cur}</span>` : ''}${I('chev', 'go')}</a>`;
     }).join('')}</div>
     <a class="card boardteaser" href="#/board"><div class="card-h">${I('trophy')}<h3>Leaderboard</h3><small>This week</small>${I('chev', 'go')}</div>
-      ${ranking('week').map((r) => `<div class="tline">${rankBadge(r.rank)}${avatar(r.p)}<b>${esc(r.p.name)}</b><span>${r.st.week.pct}%<em>${I('flame')}${r.st.cur}</em></span></div>`).join('')}</a>
-    <button class="ghost wide" id="invite">${I('share')} Share the app with family</button>`;
-  $('#invite').onclick = () => share(inviteText(), 'Family Gym');
+      ${ranking('week').map((r) => `<div class="tline">${rankBadge(r.rank)}${avatar(r.p)}<b>${esc(r.p.name)}</b><span>${r.st.week.pct}%<em>${I('flame')}${r.st.cur}</em></span></div>`).join('')}</a>`;
 }
 
 function weekStrip(pid, plan, selected) {
@@ -364,7 +422,7 @@ function viewProfile(pid, day) {
   const d = day || todayKey();
   const sk = plan.weekly[d];
   const st = stats(pid);
-  app().innerHTML = `${updateBanner()}
+  app().innerHTML = `
     <div class="hero" style="--c:${esc(p.color)}">
       <button class="av-edit" id="photo" aria-label="Change profile photo">${avatar(p, 'xl')}<span class="cam">${I('camera')}</span></button>
       <div class="hero-t"><h2>${esc(p.name)}</h2><small>${esc(plan.title.replace(/^[^:]*:\s*/, ''))} · v${esc(plan.version)}</small>
@@ -558,12 +616,13 @@ function viewSettings(pid) {
   setTitle('Settings', pid ? `#/p/${pid}` : '#/'); nav(pid, 'settings');
   const last = LS.get('lastSync', 0);
   const me = pid && profile(pid);
-  app().innerHTML = `${updateBanner()}
+  app().innerHTML = `
     ${me ? `<div class="card"><h3>${I('camera')} Profile photo</h3>
       <div class="row">${avatar(me, 'big')}<div><button class="primary" id="setphoto">${Avatars.get(pid) ? 'Change photo' : 'Add photo'}</button>
       ${Avatars.get(pid) ? '<button class="ghost" id="rmphoto">Remove</button>' : ''}</div></div>
       <small class="muted">Square crop, saved to the family cloud so every phone sees it.</small></div>` : ''}
-    <div class="card"><h3>${I('share')} Share</h3><p class="muted">Send the app link to family or friends.</p>
+    ${updCard()}
+    <div class="card"><h3>${I('share')} Share the app</h3><p class="muted">Send the Family Gym link to family or friends.</p>
       <button class="ghost" id="shareapp">${I('share')} Share Family Gym</button>
       ${SHELL ? '' : `<a class="btn ghost" href="${APK_URL}">${I('phone')} Get the Android app</a>`}</div>
     <div class="card"><h3>${I('cloud')} Sync</h3>
@@ -583,6 +642,13 @@ function viewSettings(pid) {
   $('#setphoto') && ($('#setphoto').onclick = () => pickPhoto(pid));
   $('#rmphoto') && ($('#rmphoto').onclick = () => { if (confirm('Remove profile photo?')) { Avatars.set(pid, ''); route(); } });
   $('#shareapp').onclick = () => share(inviteText(), 'Family Gym');
+  $('#updweb') && ($('#updweb').onclick = applyWebUpdate);
+  $('#updcheck').onclick = async () => {
+    const b = $('#updcheck'); b.disabled = true; b.textContent = 'Checking…';
+    await checkUpdates();
+    if (Upd.checked > 0 && !updAvail()) toast('You have the latest version');
+    if (/settings$/.test(norm(location.hash))) route();
+  };
   $('#syncnow') && ($('#syncnow').onclick = () => Sync.run().then(() => route()));
   $('#logout') && ($('#logout').onclick = () => { if (confirm('Sign out? Unsynced sets stay on this phone.')) { Sync.logout(); route(); } });
   $('#login') && ($('#login').onclick = async () => {
@@ -723,6 +789,7 @@ function viewBoard(pid) {
 
 /* ---------------- router ---------------- */
 function route() {
+  cur = norm(location.hash);
   const h = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   window.scrollTo(0, 0);
   if (h[0] === 'p' && h[1]) {
@@ -741,22 +808,29 @@ function route() {
 }
 
 async function boot() {
-  $('#sync').onclick = () => (location.hash = `#/p/${LS.get('profile', 'papa')}/settings`);
+  $('#sync').onclick = () => go(`#/p/${LS.get('profile', 'papa')}/settings`);
   $('#timer-skip').onclick = () => Timer.stop();
   $('#timer-add').onclick = () => Timer.add(30);
   try { await loadData(); }
   catch (e) { app().innerHTML = `<div class="card center"><p>Couldn't load the plans. Check the internet and try again.</p><button class="primary" onclick="location.reload()">Retry</button></div>`; return; }
-  if (!location.hash && LS.get('profile', null) && profile(LS.get('profile'))) location.hash = `#/p/${LS.get('profile')}`;
-  window.addEventListener('hashchange', route);
+  // Seed the stack as [home, start] so back from the first screen goes home, then exits.
+  const saved = LS.get('profile', null);
+  const start = location.hash ? norm(location.hash) : saved && profile(saved) ? `#/p/${saved}` : HOME;
+  history.replaceState({}, '', HOME);
+  if (start !== HOME) history.pushState({ fg: 1 }, '', start);
   window.addEventListener('online', () => Sync.run());
   window.addEventListener('offline', paintSync);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     Sync.run();
-    if (Date.now() - S.loadedAt > 10 * 60e3) loadData().then(route).catch(() => {});
+    if (Date.now() - S.loadedAt > 10 * 60e3) { loadData().then(route).catch(() => {}); checkUpdates(); }
   });
   setInterval(() => document.visibilityState === 'visible' && Sync.run(), 60e3);
   route(); paintSync(); Sync.run();
+  checkUpdates().then(() => { if (/settings$/.test(cur)) route(); });
+  const seen = LS.get('seenVer', null);
+  if (seen && seen !== APP_VERSION) toast(`Updated to v${APP_VERSION}`);
+  LS.set('seenVer', APP_VERSION);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 boot();

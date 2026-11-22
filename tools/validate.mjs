@@ -16,6 +16,12 @@ const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const LOADS = ['kg', 'bw'];
 const seen = new Set();
 
+// version.json drives the in-app "App updates" card, so it must match the shipped app.js.
+const ver = read('version.json');
+const appVer = (readFileSync(new URL('../app.js', import.meta.url), 'utf8').match(/APP_VERSION = '([\d.]+)'/) || [])[1];
+if (ver && ver.web !== appVer) errors.push(`version.json: web "${ver.web}" must equal APP_VERSION "${appVer}" in app.js`);
+if (ver && !/^\d+\.\d+\.\d+$/.test(ver.apk || '')) errors.push('version.json: apk must be x.y.z');
+
 for (const prof of index?.profiles || []) {
   const where = `plans/index.json [${prof.id}]`;
   if (!/^[a-z0-9-]{1,32}$/.test(prof.id || '')) errors.push(`${where}: id must be lowercase letters/digits/-`);
