@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.2.1';
+const APP_VERSION = '0.3.0';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -22,6 +22,82 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
   : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
 const fmtDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 const fmtKg = (kg) => (kg == null || kg === '' ? '' : `${+kg} kg`);
+
+/* ---------------- icons (inline line icons, no emoji chrome) ---------------- */
+const ICONS = {
+  dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+  chart: '<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/>',
+  trophy: '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 6h3v1a3 3 0 0 1-3 3M7 6H4v1a3 3 0 0 0 3 3"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2.5h6v3H9zM9 11h6M9 15h4"/>',
+  sliders: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  back: '<path d="m15 18-6-6 6-6"/>',
+  chev: '<path d="m9 6 6 6-6 6"/>',
+  share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 13.3 7.6 4.4M15.8 6.3 8.2 10.7"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  flame: '<path d="M12 22c3.9 0 7-2.9 7-6.8 0-3.6-2.4-5.6-3.6-8.7-.9 1.8-2 2.9-3.4 3.5.2-2.6-.8-5.3-3-7.5.1 3.9-4 6.6-4 11.4C5 18.9 8.1 22 12 22z"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.5 4.3 4.3 0 0 0 7 18z"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  warn: '<path d="M12 3 2 20h20zM12 10v4M12 17h.01"/>',
+  shield: '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/>',
+  trend: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>',
+  note: '<path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3"/>',
+  steps: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>',
+};
+const I = (n, c = '') => `<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
+
+/* ---------------- Android shell, sharing ---------------- */
+const SITE_URL = 'https://himanshusurya.github.io/family-gym/';
+const APK_URL = 'https://github.com/himanshusurya/family-gym/releases/latest/download/family-gym.apk';
+const LATEST_APK = '1.1.0';
+const SHELL = (navigator.userAgent.match(/FamilyGymAndroid\/([\d.]+)/) || [])[1] || null;
+const verLt = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); return false; };
+const shellOld = !!SHELL && verLt(SHELL, LATEST_APK);
+
+async function share(text, title = 'Family Gym') {
+  if (window.FamilyGymAndroid?.share) { window.FamilyGymAndroid.share(title, text); return; }
+  if (navigator.share) { try { await navigator.share({ title, text }); } catch { /* cancelled */ } return; }
+  try { await navigator.clipboard.writeText(text); toast('Copied. Paste it in WhatsApp'); } catch { prompt('Copy this message:', text); }
+}
+const inviteText = () => `Join our Family Gym 💪\n\nAndroid app: ${APK_URL}\nOr open in the browser: ${SITE_URL}\n\nFamily code: ask Himanshu.`;
+const updateBanner = () => (shellOld ? `<a class="banner" href="${APK_URL}">${I('download')}<div><b>App update ${LATEST_APK} available</b><small>Adds profile photos and sharing. Tap to download, then install.</small></div>${I('chev')}</a>` : '');
+
+/* ---------------- profile photos (synced via the small "avatar" table) ---------------- */
+const Avatars = {
+  map: LS.get('avatars', {}),
+  get(pid) { return this.map[pid]?.img || ''; },
+  set(pid, img) { this.map[pid] = { img, updated_at: new Date().toISOString(), synced: false }; this.save(); Sync.soon(); },
+  save() { LS.set('avatars', this.map); },
+};
+async function squareJpeg(file, size) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const s = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+    return c.toDataURL('image/jpeg', 0.82);
+  } finally { URL.revokeObjectURL(url); }
+}
+function pickPhoto(pid) {
+  if (shellOld) { toast('Update the app first (banner on the home screen) to add photos'); return; }
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.hidden = true;
+  document.body.appendChild(inp);
+  inp.onchange = async () => {
+    const f = inp.files[0]; inp.remove();
+    if (!f) return;
+    try { Avatars.set(pid, await squareJpeg(f, 256)); toast('Photo updated'); route(); }
+    catch { toast('Could not read that photo'); }
+  };
+  inp.click();
+}
 
 /* ---------------- data: plans + catalog ---------------- */
 const S = { index: null, plans: {}, ex: new Map(), loadedAt: 0 };
@@ -150,11 +226,34 @@ const Sync = {
         saveLogs(); LS.set('pullSince', since);
         if (rows.length < 1000) break;
       }
+      if (await this.syncAvatars()) pulled++;
       LS.set('lastSync', Date.now());
       this.err = '';
-      if (pulled && /\/history|\/s\/|board|^#?\/?$/.test(location.hash)) route();
+      if (pulled && /\/history|\/s\/|board|^#?\/?$|\/p\/[^/]+$/.test(location.hash)) route();
     } catch (e) { this.err = e.message; }
     finally { this.busy = false; paintSync(); }
+  },
+  // Photos ride along with set sync; a failure here never blocks set logging.
+  async syncAvatars() {
+    let changed = false;
+    try {
+      const out = Object.entries(Avatars.map).filter(([, a]) => !a.synced);
+      if (out.length) {
+        await this.api('avatar?on_conflict=profile', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify(out.map(([profile, a]) => ({ profile, img: a.img, updated_at: a.updated_at }))) });
+        out.forEach(([pid, a]) => { if (Avatars.map[pid] === a) a.synced = true; });
+        Avatars.save();
+      }
+      const since = LS.get('avSince', '1970-01-01T00:00:00Z');
+      const rows = await (await this.api(`avatar?select=profile,img,updated_at,srv_at&srv_at=gt.${encodeURIComponent(since)}&order=srv_at.asc`)).json();
+      for (const r of rows) {
+        const mine = Avatars.map[r.profile];
+        if (!mine || mine.synced || mine.updated_at <= r.updated_at) { Avatars.map[r.profile] = { img: r.img, updated_at: r.updated_at, synced: true }; changed = true; }
+        LS.set('avSince', r.srv_at);
+      }
+      Avatars.save();
+    } catch (e) { console.warn('avatar sync', e.message); }
+    return changed;
   },
 };
 
@@ -162,14 +261,14 @@ function paintSync() {
   const el = $('#sync');
   if (!el) return;
   let t, c;
-  if (!CLOUD) { t = 'Demo: saved on this phone'; c = 'warn'; }
-  else if (!Sync.authed()) { t = 'Not signed in: tap to sign in'; c = 'warn'; }
+  if (!CLOUD) { t = 'Demo mode'; c = 'warn'; }
+  else if (!Sync.authed()) { t = 'Sign in to sync'; c = 'warn'; }
   else if (Sync.busy) { t = 'Syncing…'; c = ''; }
-  else if (!navigator.onLine) { t = `Offline · ${Sync.pending()} to sync`; c = 'warn'; }
-  else if (Sync.err) { t = 'Sync problem: tap for details'; c = 'bad'; }
-  else if (Sync.pending()) { t = `${Sync.pending()} waiting to sync`; c = 'warn'; }
-  else { t = '✓ Saved to cloud'; c = 'ok'; }
-  el.textContent = t; el.className = 'sync ' + c;
+  else if (!navigator.onLine) { t = `Offline · ${Sync.pending()}`; c = 'warn'; }
+  else if (Sync.err) { t = 'Sync problem'; c = 'bad'; }
+  else if (Sync.pending()) { t = `${Sync.pending()} to sync`; c = 'warn'; }
+  else { t = 'Synced'; c = 'ok'; }
+  el.innerHTML = `<i class="dot"></i>${t}`; el.className = 'sync ' + c; el.title = t;
 }
 
 /* ---------------- rest timer ---------------- */
@@ -188,7 +287,7 @@ const Timer = {
     $('#timer-t').textContent = `${Math.floor(left / 60)}:${pad(left % 60)}`;
     if (left === 0) {
       clearInterval(this.iv);
-      $('#timer-t').textContent = 'Go! 💪';
+      $('#timer-t').textContent = 'Go!';
       navigator.vibrate?.([300, 150, 300]);
       beep();
       setTimeout(() => this.stop(), 4000);
@@ -219,26 +318,34 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2500);
 }
 function nav(pid, active) {
-  const tabs = [['today', 'Today', '🏋️'], ['history', 'History', '📈'], ['board', 'Board', '🏆'], ['plan', 'Plan', '📋'], ['settings', 'Settings', '⚙️']];
+  const tabs = [['today', 'Today', 'dumbbell'], ['history', 'Progress', 'chart'], ['board', 'Board', 'trophy'], ['plan', 'Plan', 'clipboard'], ['settings', 'Settings', 'sliders']];
   $('#nav').innerHTML = pid ? tabs.map(([k, l, i]) =>
-    `<a href="#/p/${pid}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${i}</span>${l}</a>`).join('') : '';
+    `<a href="#/p/${pid}${k === 'today' ? '' : '/' + k}" class="${k === active ? 'on' : ''}"><span>${I(i)}</span>${l}</a>`).join('') : '';
   $('#nav').hidden = !pid;
 }
-const avatar = (p, big) => `<span class="av ${big ? 'big' : ''}" style="background:${esc(p.color)}">${esc(p.emoji || p.name[0])}</span>`;
+const avatar = (p, size = '') => {
+  const img = Avatars.get(p.id);
+  return `<span class="av ${size}" style="--c:${esc(p.color)}">${img ? `<img src="${img}" alt="">` : esc(p.name[0])}</span>`;
+};
+const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 
 function viewHome() {
   setTitle('Family Gym'); nav(null);
   const ps = S.index.profiles;
-  app().innerHTML = `
-    <p class="muted center">Who is working out?</p>
+  app().innerHTML = `${updateBanner()}
+    <section class="hello"><small>${greeting()} · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</small>
+      <h2>Who's training today?</h2></section>
     <div class="profiles">${ps.map((p) => {
       const plan = S.plans[p.id]; const sk = plan?.weekly?.[todayKey()];
-      const sess = sk ? plan.sessions[sk] : null;
-      return `<a class="pcard" href="#/p/${p.id}" style="--c:${esc(p.color)}">${avatar(p, true)}
-        <div><b>${esc(p.name)}</b><small>${plan ? (sess ? 'Today: ' + esc(sess.title) : 'Rest day 😌') : 'Plan not loaded'}</small></div></a>`;
+      const sess = sk ? plan.sessions[sk] : null; const st = plan ? stats(p.id) : null;
+      return `<a class="pcard" href="#/p/${p.id}" style="--c:${esc(p.color)}">${avatar(p, 'big')}
+        <div class="pinfo"><b>${esc(p.name)}</b><small>${plan ? (sess ? esc(sess.title) : 'Rest day') : 'Plan not loaded'}</small></div>
+        ${st ? `<span class="pill ${st.cur ? 'hot' : ''}">${I('flame')}${st.cur}</span>` : ''}${I('chev', 'go')}</a>`;
     }).join('')}</div>
-    <a class="card boardteaser" href="#/board"><h3>🏆 Leaderboard · this week</h3>
-      ${ranking('week').map((r) => `<div class="tline"><i>${medal(r.rank)}</i>${avatar(r.p)}<b>${esc(r.p.name)}</b><span>${r.st.week.pct}% · 🔥 ${r.st.cur}</span></div>`).join('')}</a>`;
+    <a class="card boardteaser" href="#/board"><div class="card-h">${I('trophy')}<h3>Leaderboard</h3><small>This week</small>${I('chev', 'go')}</div>
+      ${ranking('week').map((r) => `<div class="tline">${rankBadge(r.rank)}${avatar(r.p)}<b>${esc(r.p.name)}</b><span>${r.st.week.pct}%<em>${I('flame')}${r.st.cur}</em></span></div>`).join('')}</a>
+    <button class="ghost wide" id="invite">${I('share')} Share the app with family</button>`;
+  $('#invite').onclick = () => share(inviteText(), 'Family Gym');
 }
 
 function weekStrip(pid, plan, selected) {
@@ -257,9 +364,21 @@ function viewProfile(pid, day) {
   const d = day || todayKey();
   const sk = plan.weekly[d];
   const st = stats(pid);
-  app().innerHTML = `<a class="streak" href="#/p/${pid}/board">🔥 ${st.cur} day streak · ${st.week.n} workout${st.week.n === 1 ? '' : 's'} this week <span>🏆 ›</span></a>${weekStrip(pid, plan, d)}` + (sk ? sessionBody(pid, plan, sk, d) : `
-    <div class="card center rest-card"><div class="big">😌</div><h2>Rest day</h2>
-    <p class="muted">${pid === 'himanshu' ? 'Recover. Hit your steps.' : 'Easy walk after lunch and dinner.'}</p></div>`);
+  app().innerHTML = `${updateBanner()}
+    <div class="hero" style="--c:${esc(p.color)}">
+      <button class="av-edit" id="photo" aria-label="Change profile photo">${avatar(p, 'xl')}<span class="cam">${I('camera')}</span></button>
+      <div class="hero-t"><h2>${esc(p.name)}</h2><small>${esc(plan.title.replace(/^[^:]*:\s*/, ''))} · v${esc(plan.version)}</small>
+        <a class="hstats" href="#/p/${pid}/board"><span><b>${st.cur}</b>streak</span><span><b>${st.week.n}/${st.week.due || st.week.n}</b>this week</span><span><b>${st.total}</b>total days</span></a></div>
+    </div>
+    ${weekStrip(pid, plan, d)}` + (sk ? sessionBody(pid, plan, sk, d) : `
+    <div class="card center rest-card"><div class="rest-ic">${I('moon')}</div><h2>Rest day</h2>
+    <p class="muted">${pid === 'himanshu' ? 'Recovery is where you grow. Hit 8–10k steps, sleep 7–8 hours, eat your protein.' : 'Easy walk after lunch and dinner.'}</p></div>`);
+  $('#photo').onclick = () => pickPhoto(pid);
+  $('#sharewk') && ($('#sharewk').onclick = () => {
+    const s = plan.sessions[sk]; const n = s.items.reduce((a, it, i) => a + Math.min(it.sets, setsToday(pid, sk, chosenEx(pid, sk, i, it)).length), 0);
+    const total = s.items.reduce((a, it) => a + it.sets, 0); const st2 = stats(pid);
+    share(`${p.name} ${n >= total ? "finished today's workout 💪" : `is ${Math.round(100 * n / total)}% through today's workout`}\n${s.title} · ${n}/${total} sets\n🔥 ${st2.cur}-day streak · ${st2.week.n} workout${st2.week.n === 1 ? '' : 's'} this week\n\nFamily Gym: ${SITE_URL}`);
+  });
 }
 
 function sessionBody(pid, plan, sk, d) {
@@ -271,20 +390,25 @@ function sessionBody(pid, plan, sk, d) {
     const done = setsToday(pid, sk, exId).length;
     const full = done >= it.sets;
     return `<a class="ex ${full ? 'done' : ''}" href="#/p/${pid}/s/${sk}/${i}">
-      <div class="thumb">${e.img[0] ? `<img loading="lazy" src="${esc(e.img[0])}" alt="">` : '<span>🧘</span>'}</div>
+      <div class="thumb">${e.img[0] ? `<img loading="lazy" src="${esc(e.img[0])}" alt="">` : I('dumbbell')}</div>
       <div class="exm"><b>${esc(e.name)}</b>
         <small>${it.sets} × ${esc(it.reps)} ${esc(unitLabel(it))}${it.note ? ' · ' + esc(it.note) : ''}</small></div>
-      <div class="cnt">${full ? '✅' : `${done}/${it.sets}`}</div></a>`;
+      <div class="cnt">${full ? `<span class="okdot">${I('check')}</span>` : `${done}/${it.sets}`}</div></a>`;
   }).join('');
   const totalSets = s.items.reduce((a, it) => a + it.sets, 0);
   const doneSets = s.items.reduce((a, it, i) => a + Math.min(it.sets, setsToday(pid, sk, chosenEx(pid, sk, i, it)).length), 0);
+  const pct = Math.round(100 * doneSets / totalSets);
   return `
-    <div class="sess-h"><h2>${esc(s.title)}${s.optional ? ' <span class="tag">optional</span>' : ''}</h2>
-      ${isToday ? `<div class="bar"><i style="width:${Math.round(100 * doneSets / totalSets)}%"></i></div><small class="muted">${doneSets}/${totalSets} sets today</small>`
-        : `<small class="muted">${DAY_NAME[d]}'s session. Logging still counts for today.</small>`}</div>
-    ${plan.warmup ? `<details class="card"><summary>🔥 Warm-up · ${plan.warmup.min} min</summary><ul>${plan.warmup.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}
+    <div class="sess-h"><div><small class="eyebrow">${isToday ? "Today's session" : `${DAY_NAME[d]}'s session`}</small>
+      <h2>${esc(s.title)}${s.optional ? ' <span class="tag">optional</span>' : ''}</h2></div>
+      ${isToday ? `<span class="pct">${pct}%</span>` : ''}</div>
+    ${isToday ? `<div class="bar"><i style="width:${pct}%"></i></div><small class="muted">${doneSets} of ${totalSets} sets · ${s.items.length} exercises</small>`
+      : `<small class="muted">${s.items.length} exercises · logging still counts for today</small>`}
+    ${isToday && doneSets > 0 && doneSets >= totalSets ? `<button class="primary wide" id="sharewk">${I('share')} Workout complete. Share it</button>` : ''}
+    ${plan.warmup ? `<details class="card"><summary>${I('flame')} Warm-up · ${plan.warmup.min} min</summary><ul>${plan.warmup.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}
     <div class="exlist">${items}</div>
-    ${(plan.finish || []).map((f) => `<details class="card"><summary>${f.title.startsWith('Cardio') ? '🚶' : '🧘'} ${esc(f.title)} · ${f.min} min</summary><p>${esc(f.text)}</p></details>`).join('')}`;
+    ${(plan.finish || []).map((f) => `<details class="card"><summary>${I('heart')} ${esc(f.title)} · ${f.min} min</summary><p>${esc(f.text)}</p></details>`).join('')}
+    ${isToday && doneSets > 0 && doneSets < totalSets ? `<button class="ghost wide" id="sharewk">${I('share')} Share progress</button>` : ''}`;
 }
 
 const unitLabel = (it) => (it.unit && it.unit !== 'reps' ? it.unit : 'reps');
@@ -319,17 +443,17 @@ function viewExercise(pid, sk, idx) {
   const prevI = idx > 0 ? idx - 1 : null; const nextI = idx < s.items.length - 1 ? idx + 1 : null;
   app().innerHTML = `
     <div class="demo">${e.img.length ? `<img src="${esc(e.img[0])}" alt="${esc(e.name)} start">${e.img[1] ? `<img class="b" src="${esc(e.img[1])}" alt="${esc(e.name)} end">` : ''}`
-      : '<div class="noimg">🧘<small>No photo: follow the steps below</small></div>'}</div>
+      : `<div class="noimg">${I('dumbbell')}<small>No photo: follow the steps below</small></div>`}</div>
     <h2 class="exname">${esc(e.name)}</h2>
     <p class="muted">${esc(e.muscles)}${e.equipment ? ' · ' + esc(e.equipment) : ''}</p>
     ${choices.length > 1 ? `<div class="chips">${choices.map((c) => `<button class="chip ${c === exId ? 'on' : ''}" data-swap="${esc(c)}">${esc(exInfo(c).name)}</button>`).join('')}</div>` : ''}
-    <div class="target"><b>${it.sets} × ${esc(it.reps)}</b> ${esc(unitLabel(it))}${it.rest ?? 90 ? ` · rest ${it.rest ?? 90}s` : ''}${it.note ? `<div>📝 ${esc(it.note)}</div>` : ''}</div>
+    <div class="target"><b>${it.sets} × ${esc(it.reps)}</b> ${esc(unitLabel(it))}${it.rest ?? 90 ? ` · rest ${it.rest ?? 90}s` : ''}${it.note ? `<div class="note">${I('note')} ${esc(it.note)}</div>` : ''}</div>
     ${last ? `<div class="last">Last time (${fmtDay(last.day)}): ${last.sets.map((x) => `${x.kg ? +x.kg + '×' : ''}${x.reps}`).join(', ')}</div>` : ''}
     ${suggestion(it, last) ? `<div class="hint">${suggestion(it, last)}</div>` : ''}
     <div class="sets"><div class="set head"><span>Set</span><span>${bw ? '' : 'kg'}</span><span>${esc(unitLabel(it).split('/')[0])}</span><span></span><span></span></div>${rows.join('')}</div>
-    <button class="ghost" id="addset">+ Add a set</button>
-    <details class="card" open><summary>✅ How to do it</summary><ol>${e.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></details>
-    <details class="card"><summary>⚠️ Common mistakes</summary><ul class="bad">${e.mistakes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>
+    <button class="ghost" id="addset">${I('plus')} Add a set</button>
+    <details class="card" open><summary>${I('steps')} How to do it</summary><ol>${e.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></details>
+    <details class="card"><summary>${I('warn')} Common mistakes</summary><ul class="bad">${e.mistakes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>
     <div class="pager">
       ${prevI !== null ? `<a class="btn ghost" href="#/p/${pid}/s/${sk}/${prevI}">← Prev</a>` : '<span></span>'}
       ${nextI !== null ? `<a class="btn ${today.length >= it.sets ? 'primary' : 'ghost'}" href="#/p/${pid}/s/${sk}/${nextI}">Next →</a>`
@@ -387,15 +511,15 @@ function bestPerDay(logs) {
 
 function viewHistory(pid) {
   const p = profile(pid); if (!p) return notFound();
-  setTitle(`${p.name} · History`, `#/p/${pid}`); nav(pid, 'history');
+  setTitle(`${p.name} · Progress`, `#/p/${pid}`); nav(pid, 'history');
   const mine = LOGS.filter((l) => live(l) && l.profile === pid);
   const days = [...new Set(mine.map((l) => l.day))].sort().reverse();
   const exs = [...new Set(mine.map((l) => l.ex))];
   const lastDay = (ex) => mine.filter((l) => l.ex === ex).reduce((m, l) => (l.day > m ? l.day : m), '');
   exs.sort((a, b) => lastDay(b).localeCompare(lastDay(a)));
-  app().innerHTML = activityCard(pid) + (!mine.length ? `<div class="card center"><div class="big">📈</div><p>No sets logged yet. Your progress shows up here.</p></div>` : `
+  app().innerHTML = activityCard(pid, true) + (!mine.length ? `<div class="card center"><div class="rest-ic">${I('chart')}</div><p>No sets logged yet. Your progress shows up here.</p></div>` : `
     <p class="muted small center">${mine.length} sets logged in total</p>
-    <h3>By exercise</h3>
+    <h3 class="sect">By exercise</h3>
     <div class="hist">${exs.map((ex) => {
       const best = bestPerDay(mine.filter((l) => l.ex === ex)); const b = best[best.length - 1];
       const vals = best.map((x) => (+x.kg || 0) || x.reps);
@@ -403,6 +527,7 @@ function viewHistory(pid) {
         <small>${fmtDay(b.day)} · best ${b.kg ? +b.kg + ' kg × ' : ''}${b.reps}</small></div>${spark(vals.slice(-12))}</a>`;
     }).join('')}</div>`);
   wireHeatmaps();
+  $('#sharehist').onclick = () => { const st = stats(pid); share(`${p.name} on Family Gym\n🔥 ${st.cur}-day streak (best ${st.best})\n📅 ${st.month.n} workout days this month · ${st.total} total\n${mine.length} sets logged\n\n${SITE_URL}`); };
 }
 
 function viewHistoryEx(pid, ex) {
@@ -421,8 +546,8 @@ function viewPlan(pid) {
   setTitle(`${p.name} · Plan`, `#/p/${pid}`); nav(pid, 'plan');
   app().innerHTML = `
     <div class="card"><b>${esc(plan.title)}</b><br><small class="muted">Plan v${esc(plan.version)} · updated ${esc(plan.updated || '')}</small></div>
-    <details class="card" open><summary>🛡️ Rules</summary><ul>${(plan.rules || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
-    <details class="card"><summary>📈 How to progress</summary><ul>${(plan.progression || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
+    <details class="card" open><summary>${I('shield')} Rules</summary><ul>${(plan.rules || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
+    <details class="card"><summary>${I('trend')} How to progress</summary><ul>${(plan.progression || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
     ${WEEK.map((d) => { const sk = plan.weekly[d]; const s = sk && plan.sessions[sk];
       return `<details class="card"><summary><b>${DAY_NAME[d]}</b> · ${s ? esc(s.title) : 'Rest'}</summary>${s ? `<table class="pt">${s.items.map((it) =>
         `<tr><td>${esc(exInfo(it.ex).name)}${it.alt ? `<br><small class="muted">or ${it.alt.map((a) => esc(exInfo(a).name)).join(', ')}</small>` : ''}</td><td>${it.sets}×${esc(it.reps)}</td></tr>`).join('')}</table>` : ''}</details>`;
@@ -432,8 +557,16 @@ function viewPlan(pid) {
 function viewSettings(pid) {
   setTitle('Settings', pid ? `#/p/${pid}` : '#/'); nav(pid, 'settings');
   const last = LS.get('lastSync', 0);
-  app().innerHTML = `
-    <div class="card"><h3>☁️ Sync</h3>
+  const me = pid && profile(pid);
+  app().innerHTML = `${updateBanner()}
+    ${me ? `<div class="card"><h3>${I('camera')} Profile photo</h3>
+      <div class="row">${avatar(me, 'big')}<div><button class="primary" id="setphoto">${Avatars.get(pid) ? 'Change photo' : 'Add photo'}</button>
+      ${Avatars.get(pid) ? '<button class="ghost" id="rmphoto">Remove</button>' : ''}</div></div>
+      <small class="muted">Square crop, saved to the family cloud so every phone sees it.</small></div>` : ''}
+    <div class="card"><h3>${I('share')} Share</h3><p class="muted">Send the app link to family or friends.</p>
+      <button class="ghost" id="shareapp">${I('share')} Share Family Gym</button>
+      ${SHELL ? '' : `<a class="btn ghost" href="${APK_URL}">${I('phone')} Get the Android app</a>`}</div>
+    <div class="card"><h3>${I('cloud')} Sync</h3>
       ${!CLOUD ? '<p>This is the <b>demo</b>: logs are saved on this phone only. Cloud sync turns on when the family server is connected.</p>'
         : Sync.authed() ? `<p>Signed in as the family. ${Sync.pending()} set(s) waiting.<br><small class="muted">Last sync: ${last ? new Date(last).toLocaleString() : 'never'}</small></p>
             ${Sync.err ? `<p class="badtxt">${esc(Sync.err)}</p>` : ''}
@@ -442,11 +575,14 @@ function viewSettings(pid) {
             <input id="code" type="password" inputmode="numeric" placeholder="Family code" autocomplete="current-password">
             <button class="primary" id="login">Sign in</button>`}
     </div>
-    <div class="card"><h3>📋 Plans</h3><p class="muted">Plans load from the internet each time the app opens, so changes show up without an app update.</p>
+    <div class="card"><h3>${I('clipboard')} Plans</h3><p class="muted">Plans load from the internet each time the app opens, so changes show up without an app update.</p>
       <ul>${S.index.profiles.map((p) => `<li>${esc(p.name)}: v${esc(S.plans[p.id]?.version || '?')}</li>`).join('')}</ul>
       <button class="ghost" id="reload">Reload plans now</button></div>
-    <div class="card"><h3>💾 Backup</h3><p class="muted">Download every logged set as a spreadsheet (CSV).</p><button class="ghost" id="csv">Export CSV</button></div>
+    <div class="card"><h3>${I('download')} Backup</h3><p class="muted">Download every logged set as a spreadsheet (CSV).</p><button class="ghost" id="csv">Export CSV</button></div>
     <p class="muted small center">Family Gym v${APP_VERSION}<br>Exercise photos & base instructions: free-exercise-db (public domain).</p>`;
+  $('#setphoto') && ($('#setphoto').onclick = () => pickPhoto(pid));
+  $('#rmphoto') && ($('#rmphoto').onclick = () => { if (confirm('Remove profile photo?')) { Avatars.set(pid, ''); route(); } });
+  $('#shareapp').onclick = () => share(inviteText(), 'Family Gym');
   $('#syncnow') && ($('#syncnow').onclick = () => Sync.run().then(() => route()));
   $('#logout') && ($('#logout').onclick = () => { if (confirm('Sign out? Unsynced sets stay on this phone.')) { Sync.logout(); route(); } });
   $('#login') && ($('#login').onclick = async () => {
@@ -535,11 +671,11 @@ function wireHeatmaps() {
 }
 const hmLegend = (color) => `<div class="hm-legend" style="--hcol:${esc(color)}">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</div>`;
 
-function activityCard(pid) {
+function activityCard(pid, shareBtn) {
   const p = profile(pid); const st = stats(pid);
-  return `<div class="card"><div class="hm-head"><h3>${st.year} workout day${st.year === 1 ? '' : 's'} in the past year</h3></div>
+  return `<div class="card"><div class="hm-head"><h3>${st.year} workout day${st.year === 1 ? '' : 's'} in the past year</h3>${shareBtn ? `<button class="iconbtn" id="sharehist" aria-label="Share">${I('share')}</button>` : ''}</div>
     ${heatmap(pid, 53, p.color)}${hmLegend(p.color)}
-    <div class="stats4"><div><b>🔥 ${st.cur}</b><small>Current streak</small></div><div><b>${st.best}</b><small>Best streak</small></div>
+    <div class="stats4"><div><b>${I('flame', 'fl')}${st.cur}</b><small>Current streak</small></div><div><b>${st.best}</b><small>Best streak</small></div>
     <div><b>${st.month.n}</b><small>Days this month</small></div><div><b>${st.total}</b><small>Total days</small></div></div></div>`;
 }
 
@@ -552,7 +688,7 @@ function ranking(tab) {
   rows.forEach((r, i) => { const k = key(r).join(); if (k !== prev) rank = i + 1; prev = k; r.rank = rank; });
   return rows;
 }
-const medal = (r) => ['🥇', '🥈', '🥉'][r - 1] || `#${r}`;
+const rankBadge = (r) => `<span class="rk r${Math.min(r, 4)}">${r}</span>`;
 function weekDots(pid, st) {
   const plan = S.plans[pid]; const today = midnight();
   return `<div class="wdots">${WEEK.map((w, i) => {
@@ -571,15 +707,17 @@ function viewBoard(pid) {
     <div class="board">${rows.map((r) => {
       const st = r.st; const m = tab === 'all' ? null : st[tab];
       return `<a class="brow ${r.rank === 1 && (m ? m.n : st.total) ? 'lead' : ''}" href="#/p/${r.p.id}/history" style="--c:${esc(r.p.color)}">
-        <span class="medal">${medal(r.rank)}</span>${avatar(r.p)}
-        <div class="bname"><b>${esc(r.p.name)}</b><small>🔥 ${st.cur} day streak · best ${st.best}</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}</div>
+        <span class="medal">${rankBadge(r.rank)}</span>${avatar(r.p)}
+        <div class="bname"><b>${esc(r.p.name)}</b><small>${I('flame')} ${st.cur} day streak · best ${st.best}</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}</div>
         <div class="bscore">${m ? `<b>${m.pct}%</b><small>${m.n}/${m.due} day${m.due === 1 ? '' : 's'}</small>` : `<b>${st.total}</b><small>days</small>`}</div></a>`;
     }).join('')}</div>
     <p class="muted small center">${tab === 'all' ? 'Ranked by total workout days.' : 'Ranked by planned workout days done, so 5-day and 6-day plans compete fairly. Rest days never break a streak.'}</p>
     ${note}
+    <button class="ghost wide" id="shareboard">${I('share')} Share standings</button>
     <h3 class="sect">Last 4 months</h3>
     ${rows.map((r) => `<div class="card"><div class="hm-head">${avatar(r.p)} <b>${esc(r.p.name)}</b> <span class="muted small">${r.st.year} days in the past year</span></div>${heatmap(r.p.id, 17, r.p.color)}</div>`).join('')}`;
   document.querySelectorAll('.seg button').forEach((b) => { b.onclick = () => { LS.set('boardTab', b.dataset.tab); viewBoard(pid); }; });
+  $('#shareboard').onclick = () => share(`Family Gym leaderboard · ${BOARD_TABS.find((t) => t[0] === tab)[1].toLowerCase()}\n\n${rows.map((r) => `${['🥇', '🥈', '🥉'][r.rank - 1] || r.rank + '.'} ${r.p.name}: ${tab === 'all' ? r.st.total + ' days' : r.st[tab].pct + '% (' + r.st[tab].n + '/' + r.st[tab].due + ' days)'} · 🔥 ${r.st.cur}`).join('\n')}\n\n${SITE_URL}`);
   wireHeatmaps();
 }
 

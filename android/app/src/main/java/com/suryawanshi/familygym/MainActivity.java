@@ -12,6 +12,8 @@ import android.provider.MediaStore;
 import android.view.View;
 import android.view.WindowInsets;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -30,9 +32,11 @@ import java.nio.charset.StandardCharsets;
  */
 public class MainActivity extends Activity {
     static final String BASE = "https://himanshusurya.github.io/family-gym/";
-    static final int BG = Color.parseColor("#14161c");
+    static final int BG = Color.parseColor("#0b0d12");
+    static final int PICK = 41;
 
     private WebView web;
+    private ValueCallback<Uri[]> pending;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -55,6 +59,7 @@ public class MainActivity extends Activity {
 
         web.addJavascriptInterface(new Bridge(), "FamilyGymAndroid");
         web.setWebViewClient(new Client());
+        web.setWebChromeClient(new Chrome());
 
         if (state != null) web.restoreState(state);
         else web.loadUrl(BASE);
@@ -113,6 +118,33 @@ public class MainActivity extends Activity {
         web.onResume();
     }
 
+    @SuppressWarnings("deprecation")
+    @Override
+    protected void onActivityResult(int req, int code, Intent data) {
+        super.onActivityResult(req, code, data);
+        if (req != PICK || pending == null) return;
+        pending.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(code, data));
+        pending = null;
+    }
+
+    /** Lets <input type=file> open the photo picker (profile photos). */
+    private class Chrome extends WebChromeClient {
+        @SuppressWarnings("deprecation")
+        @Override
+        public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> cb, FileChooserParams params) {
+            if (pending != null) pending.onReceiveValue(null);
+            pending = cb;
+            try {
+                startActivityForResult(params.createIntent(), PICK);
+            } catch (ActivityNotFoundException e) {
+                pending = null;
+                cb.onReceiveValue(null);
+                return false;
+            }
+            return true;
+        }
+    }
+
     private class Client extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
@@ -129,7 +161,7 @@ public class MainActivity extends Activity {
         public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError err) {
             if (!req.isForMainFrame()) return;
             // Only reached before the service worker has cached the app (very first launch offline).
-            String html = "<html><body style='background:#14161c;color:#e8eaf0;font-family:sans-serif;"
+            String html = "<html><body style='background:#0b0d12;color:#e8eaf0;font-family:sans-serif;"
                     + "display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0'>"
                     + "<div style='font-size:48px'>🏋️</div><h2>No internet</h2>"
                     + "<p style='color:#9aa0ad;text-align:center;padding:0 24px'>Connect once so Family Gym can download."
@@ -140,8 +172,15 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Exposed to JS as window.FamilyGymAndroid — blob downloads don't work inside a WebView. */
+    /** Exposed to JS as window.FamilyGymAndroid — blob downloads and navigator.share don't work inside a WebView. */
     private class Bridge {
+        @JavascriptInterface
+        public void share(String title, String text) {
+            Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, text);
+            runOnUiThread(() -> startActivity(Intent.createChooser(send, title)));
+        }
+
         @JavascriptInterface
         public String saveFile(String name, String mime, String text) {
             String safe = name.replaceAll("[^A-Za-z0-9._-]", "_");

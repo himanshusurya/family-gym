@@ -1,5 +1,5 @@
 // App shell: network-first (so fixes ship without reinstall). Media: cache-first. Plans are fetched by app.js with no-store.
-const SHELL = 'fg-shell-v1';
+const SHELL = 'fg-shell-v2';
 const MEDIA = 'fg-media-v1';
 const SHELL_FILES = ['./', 'index.html', 'styles.css', 'app.js', 'config.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
 

@@ -30,3 +30,18 @@ create policy family_all on public.set_log for all to authenticated using (true)
 -- keep-alive target for the GitHub Action (free projects pause after 7 days idle)
 create or replace function public.ping() returns int language sql stable as $$ select 1 $$;
 grant execute on function public.ping() to anon;
+
+-- Profile photos (v0.3.0): one small square JPEG data URL per profile. Empty img = removed.
+create table if not exists public.avatar (
+  profile    text primary key check (profile ~ '^[a-z0-9-]{1,32}$'),
+  img        text not null default '' check (length(img) < 150000),
+  updated_at timestamptz not null default now(),
+  srv_at     timestamptz not null default clock_timestamp()
+);
+drop trigger if exists avatar_touch on public.avatar;
+create trigger avatar_touch before insert or update on public.avatar for each row execute function public.set_log_touch();
+alter table public.avatar enable row level security;
+revoke all on public.avatar from anon;
+grant select, insert, update on public.avatar to authenticated;
+drop policy if exists family_all on public.avatar;
+create policy family_all on public.avatar for all to authenticated using (true) with check (true);

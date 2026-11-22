@@ -1,15 +1,15 @@
 {
   "id": "himanshu",
   "title": "Himanshu: spine-safe Upper/Lower v3 (5 days)",
-  "version": "3.1",
+  "version": "3.2",
   "updated": "2026-11-22",
   "weekly": {
     "mon": "UA",
     "tue": "LA",
-    "wed": null,
-    "thu": "UB",
-    "fri": "LB",
-    "sat": "D5",
+    "wed": "UB",
+    "thu": "LB",
+    "fri": "D5",
+    "sat": null,
     "sun": null
   },
   "warmup": {
