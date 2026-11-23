@@ -1,7 +1,7 @@
 /* Family Gym: offline-first workout logger.
  * Plans come from plans/*.json (edit them on GitHub, no app update needed).
  * Set logs live on the phone first and sync to Supabase (set_log table) when online. */
-const APP_VERSION = '0.5.3';
+const APP_VERSION = '0.5.4';
 const CFG = window.FG_CONFIG || {};
 const CLOUD = !!(CFG.supabaseUrl && CFG.anonKey);
 
@@ -585,13 +585,13 @@ function viewExercise(pid, sk, idx) {
     ${suggestion(it, last) ? `<div class="hint">${suggestion(it, last)}</div>` : ''}
     <div class="sets"><div class="set head"><span>Set</span><span>${bw ? '' : 'kg'}</span><span>${esc(unitLabel(it).split('/')[0])}</span><span></span><span></span></div>${rows.join('')}</div>
     <button class="ghost" id="addset">${I('plus')} Add a set</button>
-    <details class="card" open><summary>${I('steps')} How to do it</summary><ol>${e.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></details>
-    <details class="card"><summary>${I('warn')} Common mistakes</summary><ul class="bad">${e.mistakes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>
     <div class="pager">
       ${prevI !== null ? `<a class="btn ghost" href="#/p/${pid}/s/${sk}/${prevI}">← Prev</a>` : '<span></span>'}
       ${nextI !== null ? `<a class="btn ${today.length >= it.sets ? 'primary' : 'ghost'}" href="#/p/${pid}/s/${sk}/${nextI}">Next →</a>`
         : `<a class="btn ${today.length >= it.sets ? 'primary' : 'ghost'}" href="${sd === todayKey() ? HOME : `#/p/${pid}/d/${sd}`}">Finish ✓</a>`}
-    </div>`;
+    </div>
+    <details class="card" open><summary>${I('steps')} How to do it</summary><ol>${e.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></details>
+    <details class="card"><summary>${I('warn')} Common mistakes</summary><ul class="bad">${e.mistakes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`;
 
   app().querySelectorAll('[data-swap]').forEach((b) => b.onclick = () => { LS.set(swapKey(pid, sk, idx), b.dataset.swap); route(); });
   $('#addset').onclick = () => {
@@ -807,18 +807,19 @@ function stats(pid) {
   // Planned days only count from the first workout ever logged, so joining mid-week isn't "missed" days.
   const startD = first ? new Date(first + 'T00:00:00') : today;
   const range = (start, end = today) => {
-    let n = 0, due = 0, goal = 0;
+    let n = 0, due = 0, goal = 0, sets = 0;
     for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-      if (d <= today && done(d)) n++;
+      if (d <= today && done(d)) { n++; sets += act.get(dayStr(d)); }
       if (d < startD || !isPlanned(plan, d)) continue;
       goal++;
       if (d < today || (d <= today && done(d))) due++;
     }
-    return { n, due, goal, pct: due ? Math.min(100, Math.round((n / due) * 100)) : (n ? 100 : 0) };
+    return { n, due, goal, sets, pct: due ? Math.min(100, Math.round((n / due) * 100)) : (n ? 100 : 0) };
   };
   const monday = addDays(today, -((today.getDay() + 6) % 7));
   const year = [...act.keys()].filter((k) => k > dayStr(addDays(today, -365))).length;
-  return { act, cur, best, total: act.size, year, start: startD, week: range(monday, addDays(monday, 6)), month: range(new Date(today.getFullYear(), today.getMonth(), 1)), monday };
+  const sets = [...act.values()].reduce((a, b) => a + b, 0);
+  return { act, cur, best, total: act.size, sets, year, start: startD, week: range(monday, addDays(monday, 6)), month: range(new Date(today.getFullYear(), today.getMonth(), 1)), monday };
 }
 
 // LeetCode-style heatmap: one column per week (Mon at top), colour by sets logged that day.
@@ -859,7 +860,8 @@ function activityCard(pid, shareBtn) {
 const BOARD_TABS = [['week', 'This week'], ['month', 'This month'], ['all', 'All time']];
 function ranking(tab) {
   const rows = S.index.profiles.filter((p) => S.plans[p.id]).map((p) => ({ p, st: stats(p.id) }));
-  const key = (r) => (tab === 'all' ? [r.st.total, r.st.best, r.st.cur] : [r.st[tab].pct, r.st[tab].n, r.st.cur]);
+  // Last tiebreaker: sets logged in the period.
+  const key = (r) => (tab === 'all' ? [r.st.total, r.st.best, r.st.cur, r.st.sets] : [r.st[tab].pct, r.st[tab].n, r.st.cur, r.st[tab].sets]);
   rows.sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; });
   let rank = 0, prev = null;
   rows.forEach((r, i) => { const k = key(r).join(); if (k !== prev) rank = i + 1; prev = k; r.rank = rank; });
@@ -887,11 +889,11 @@ function viewBoard() {
       const mine = r.p.id === pid; const tag = mine ? 'a' : 'div';
       return `<${tag} class="brow ${mine ? 'me' : ''} ${r.rank === 1 && (m ? m.n : st.total) ? 'lead' : ''}" ${mine ? `href="#/p/${pid}/history"` : ''} style="--c:${esc(r.p.color)}">
         <span class="medal">${rankBadge(r.rank)}</span>${avatar(r.p)}
-        <div class="bname"><b>${esc(r.p.name)}${mine ? ' <small class="you">You</small>' : ''}</b><small>${I('flame')} ${st.cur} day streak · best ${st.best}</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}
+        <div class="bname"><b>${esc(r.p.name)}${mine ? ' <small class="you">You</small>' : ''}</b><small>${I('flame')} ${st.cur} day streak · best ${st.best} · ${m ? m.sets : st.sets} sets</small>${tab === 'week' ? weekDots(r.p.id, st) : ''}
           ${m ? `<div class="pbar"><i style="width:${Math.min(100, m.pct)}%"></i></div>` : ''}</div>
         <div class="bscore">${m ? `<b>${m.due ? m.pct + '%' : '–'}</b><small>${m.due ? `${m.n}/${m.due}` : m.n} day${(m.due || m.n) === 1 ? '' : 's'}</small>` : `<b>${st.total}</b><small>days</small>`}</div></${tag}>`;
     }).join('')}</div>
-    <p class="muted small center">${tab === 'all' ? 'Ranked by total workout days.' : 'Ranked by planned workout days done, so 5-day and 6-day plans compete fairly. Rest days never break a streak.'}</p>
+    <p class="muted small center">${tab === 'all' ? 'Ranked by total workout days. Ties go to more sets logged.' : 'Ranked by planned workout days done, so 5-day and 6-day plans compete fairly. Ties go to more sets logged. Rest days never break a streak.'}</p>
     ${note}
     <button class="ghost wide" id="shareboard">${I('share')} Share standings</button>
     <h3 class="sect">Progress</h3>
